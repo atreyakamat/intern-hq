@@ -1,0 +1,22 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+
+# Builds
+dist/
+build/
+coverage/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# OS/Editor
+.DS_Store
+.vscode/
+.idea/
+*.swp
