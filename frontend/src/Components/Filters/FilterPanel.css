@@ -1,0 +1,120 @@
+.filter-panel {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  width: 280px;
+  flex-shrink: 0;
+  max-height: 100%;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.filter-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.toggle-button {
+  background: none;
+  border: none;
+  color: #4f46e5;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.filter-content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-group label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.filter-group select, 
+.filter-group input[type="text"] {
+  padding: 8px 12px;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  font-size: 14px;
+  width: 100%;
+}
+
+.range-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.range-container input[type="range"] {
+  flex: 1;
+}
+
+.range-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  min-width: 30px;
+  text-align: right;
+}
+
+.skills-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.skills-selector select {
+  height: 120px;
+  padding: 8px;
+}
+
+.skills-help {
+  font-size: 12px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.filter-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.filter-actions button {
+  flex: 1;
+  margin: 0 4px;
+}
+
+@media (max-width: 768px) {
+  .filter-panel {
+    width: 100%;
+    margin-bottom: 16px;
+  }
+  
+  .filter-panel:not(.expanded) .filter-content {
+    display: none;
+  }
+}
