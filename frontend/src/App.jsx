@@ -1,8 +1,13 @@
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import CandidateDashboard from './components/Dashboard/CandidateDashboard';
 import CandidateDetail from './components/Candidates/CandidateDetail';
-import Navbar from './components/Navbar'; 
-import './App.css';
+// Import your existing components
+import Navbar from './components/Navbar'; // Your existing navbar
+import Footer from './components/Footer'; // Your existing footer
+import Login from './components/Auth/Login'; // Your existing login
+import Register from './components/Auth/Register'; // Your existing register
+// Other imports...
 
 function App() {
   return (
@@ -11,11 +16,17 @@ function App() {
         <Navbar />
         <main className="main-content">
           <Routes>
+            {/* Use the new dashboard as your main route */}
             <Route path="/" element={<CandidateDashboard />} />
             <Route path="/candidates/:id" element={<CandidateDetail />} />
-            {/* Add more routes as needed */}
+            
+            {/* Keep your existing routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            {/* Other routes... */}
           </Routes>
         </main>
+        <Footer />
       </div>
     </Router>
   );
