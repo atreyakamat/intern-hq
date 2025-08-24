@@ -4,6 +4,7 @@ import axios from 'axios';
 import CandidateCard from './CandidateCard';
 import FilterPanel from '../Filters/filterpanel';
 import StatsOverview from '../Analytics/statsoverview';
+import { mockCandidates, mockStats } from '../utils/mockData';
 import { API_BASE_URL } from '../../config';
 import './Dashboard.css';
 
