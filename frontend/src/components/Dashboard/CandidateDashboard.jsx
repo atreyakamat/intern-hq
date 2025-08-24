@@ -26,6 +26,16 @@ const CandidateDashboard = () => {
   }, [filters]);
 
   const fetchCandidates = async () => {
+  setLoading(true);
+  // You can filter mockCandidates here if you want, or simply set all
+  setCandidates(mockCandidates);
+  setLoading(false);
+  };
+
+  const fetchStats = async () => {
+  setStats(mockStats);
+  };
+  /*const fetchCandidates = async () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_BASE_URL}/api/candidates`, { 
@@ -37,16 +47,16 @@ const CandidateDashboard = () => {
       console.error('Error fetching candidates:', error);
       setLoading(false);
     }
-  };
+  };*/
 
-  const fetchStats = async () => {
+  /*const fetchStats = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/api/analytics/overview`);
       setStats(response.data);
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
-  };
+  };*/
 
   const handleBulkAction = async (action, selectedIds) => {
     try {
