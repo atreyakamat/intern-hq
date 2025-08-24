@@ -1,7 +1,7 @@
 import React from 'react';
-import './StatsOverview.css';
+import './statsoverview.css';
 
-const StatsOverview = ({ stats }) => {
+const statsoverview = ({ stats }) => {
   if (!stats) return null;
   
   const { totalCandidates, statusStats, averageScore } = stats;
@@ -36,4 +36,4 @@ const StatsOverview = ({ stats }) => {
   );
 };
 
-export default StatsOverview;
+export default statsoverview;
