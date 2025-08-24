@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './FilterPanel.css';
+import './filterpanel.css';
 
 const FilterPanel = ({ filters, onChange }) => {
   const [localFilters, setLocalFilters] = useState(filters);
@@ -128,4 +128,4 @@ const FilterPanel = ({ filters, onChange }) => {
   );
 };
 
-export default FilterPanel;
+export default filterpanel;
