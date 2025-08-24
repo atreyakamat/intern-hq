@@ -1,24 +1,56 @@
 .candidate-card {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 1rem;
-  margin: 1rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  transition: box-shadow 0.2s;
 }
-
-.candidate-card-header {
+.candidate-card:hover {
+  box-shadow: 0 6px 24px rgba(0,0,0,0.16);
+}
+.candidate-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.candidate-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #635bff;
+}
+.candidate-name {
   font-size: 1.2rem;
-  font-weight: bold;
-  margin-bottom: 0.5rem;
+  font-weight: 600;
 }
-
-.candidate-card-skills {
-  margin: 0.5rem 0;
+.skill-badge {
+  background: #635bff;
+  color: #fff;
+  border-radius: 6px;
+  padding: 2px 8px;
+  margin-right: 4px;
+  font-size: 0.9rem;
 }
-
-.candidate-card-actions {
+.candidate-actions {
   display: flex;
   gap: 0.5rem;
-  margin-top: 1rem;
+  margin-top: 0.6rem;
+}
+.candidate-actions button {
+  border-radius: 6px;
+  border: none;
+  padding: 6px 14px;
+  background: #635bff;
+  color: #fff;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.candidate-actions button:hover {
+  background: #4132b4;
 }
