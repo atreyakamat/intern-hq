@@ -1,5 +1,5 @@
 import React from 'react';
-import './statsoverview.css';
+import './StatsOverview.css';
 
 const statsoverview = ({ stats }) => {
   if (!stats) return null;
@@ -36,4 +36,4 @@ const statsoverview = ({ stats }) => {
   );
 };
 
-export default statsoverview;
+export default StatsOverview;
