@@ -1,12 +1,12 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import CandidateDashboard from './src/components/Dashboard/CandidateDashboard';
-import CandidateDetail from './src/components/Candidates/CandidateDetail';
+import CandidateDashboard from './components/Dashboard/CandidateDashboard';
+import CandidateDetail from './components/Candidates/CandidateDetail';
 // Import your existing components
-import Navbar from './src/components/Navbar'; // Your existing navbar
-import Footer from './src/components/Footer'; // Your existing footer
-import Login from './src/components/Auth/Login'; // Your existing login
-import Register from './src/components/Auth/Register'; // Your existing register
+import Navbar from './components/Navbar'; // Your existing navbar
+import Footer from './components/Footer'; // Your existing footer
+import Login from './components/Auth/Login'; // Your existing login
+import Register from './components/Auth/Register'; // Your existing register
 // Other imports...
 
 function App() {
