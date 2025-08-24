@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CandidateCard from './CandidateCard';
-import FilterPanel from '../Filters/FilterPanel';
-import StatsOverview from '../Analytics/StatsOverview';
+import FilterPanel from '../Filters/filterpanel';
+import StatsOverview from '../Analytics/statsoverview';
 import { API_BASE_URL } from '../../config';
 import './Dashboard.css';
 
