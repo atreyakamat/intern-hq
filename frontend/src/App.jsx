@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import CandidateDashboard from './components/Dashboard/CandidateDashboard';
 import CandidateDetail from './components/Candidates/CandidateDetail';
+import ResumeUpload from './components/Upload/ResumeUpload';
+import CreateRole from './components/Roles/CreateRole';
 // Import your existing components
 import Navbar from './components/Navbar'; // Your existing navbar
 import Footer from './components/Footer'; // Your existing footer
@@ -19,6 +21,8 @@ function App() {
             {/* Use the new dashboard as your main route */}
             <Route path="/" element={<CandidateDashboard />} />
             <Route path="/candidates/:id" element={<CandidateDetail />} />
+            <Route path="/upload" element={<ResumeUpload />} />
+            <Route path="/roles/new" element={<CreateRole />} />
             
             {/* Keep your existing routes */}
             <Route path="/login" element={<Login />} />
