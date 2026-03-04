@@ -63,7 +63,7 @@ const applicantSchema = new mongoose.Schema(
       skillMatch: { type: Number, default: 0 },
       experienceScore: { type: Number, default: 0 },
       projectDepth: { type: Number, default: 0 },
-      clarityScore: { type: Number, default: 0 },
+      communication: { type: Number, default: 0 },
       bonusSignals: { type: Number, default: 0 },
       weighted: { type: Number, default: 0 },
     },
@@ -89,6 +89,9 @@ const applicantSchema = new mongoose.Schema(
       enum: ['pending', 'reviewing', 'accepted', 'rejected'],
       default: 'pending',
     },
+
+    /* -------- email tracking -------- */
+    emailSent: { type: Boolean, default: false },
 
     /* -------- email log -------- */
     emailLog: {

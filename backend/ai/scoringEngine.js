@@ -6,22 +6,22 @@
  *
  *  Layer 1 – Deterministic scoring
  *    FinalDeterministic =
- *      (SkillMatch      * w.skills)     +
- *      (ExperienceScore * w.experience) +
- *      (ProjectDepth    * w.projects)   +
- *      (ClarityScore    * w.clarity)    +
- *      (BonusSignals    * w.bonus)
+ *      (SkillMatch        * w.skills)         +
+ *      (ExperienceScore   * w.experience)     +
+ *      (ProjectDepth      * w.projects)       +
+ *      (CommunicationScore* w.communication)  +
+ *      (BonusSignals      * w.bonus)
  *
- *  Layer 2 – AI reasoning via LangChain / OpenAI
- *    contextualFit, strengths, weaknesses, fitRating
+ *  Layer 2 – AI reasoning via candidateEvaluator
+ *    strengths, weaknesses, fitRating, summary
  *
- *  Combined: 0.45 * deterministic + 0.55 * AI
+ *  Layer 3 – RAG contextual fit
+ *
+ *  Combined: 0.45 * deterministic + 0.40 * AI + 0.15 * RAG
  * -------------------------------------------------
  */
-const { PromptTemplate } = require('@langchain/core/prompts');
-const { StringOutputParser } = require('@langchain/core/output_parsers');
-const { getLLM } = require('./ragPipeline');
 const { evaluateWithRAG } = require('./ragPipeline');
+const { evaluateCandidate } = require('./candidateEvaluator');
 const { embedResume } = require('./embedding');
 
 /* ================================================================
@@ -108,10 +108,10 @@ function calcProjectDepth(projectDescriptions, resumeText) {
 }
 
 /**
- * Clarity / communication score (0-100).
- * Based on motivation answer quality.
+ * Communication score (0-100).
+ * Based on motivation answer quality and resume clarity.
  */
-function calcClarityScore(motivationAnswer) {
+function calcCommunicationScore(motivationAnswer) {
   if (!motivationAnswer) return 0;
   let score = 0;
 
@@ -175,7 +175,7 @@ function deterministicScore(applicant, role) {
     applicant.projectDescriptions,
     applicant.resumeText
   );
-  const clarityScore = calcClarityScore(applicant.motivationAnswer);
+  const communication = calcCommunicationScore(applicant.motivationAnswer);
   const bonusSignals = calcBonusSignals(applicant);
 
   const w = role.weightConfig;
@@ -183,104 +183,18 @@ function deterministicScore(applicant, role) {
     skillMatch * w.skills +
       experienceScore * w.experience +
       projectDepth * w.projects +
-      clarityScore * w.clarity +
+      communication * w.communication +
       bonusSignals * w.bonus
   );
 
-  return { skillMatch, experienceScore, projectDepth, clarityScore, bonusSignals, weighted };
+  return { skillMatch, experienceScore, projectDepth, communication, bonusSignals, weighted };
 }
 
 /* ================================================================
    LAYER 2 — AI-Powered Reasoning
    ================================================================ */
 
-const AI_EVALUATION_PROMPT = PromptTemplate.fromTemplate(`
-You are a senior hiring committee member evaluating an internship applicant.
-
-## Role
-Title: {roleTitle}
-Required Skills: {requiredSkills}
-Preferred Skills: {preferredSkills}
-Experience Level: {experienceLevel}
-Company Culture: {cultureDescription}
-Scoring Weights: skills={wSkills}, experience={wExperience}, projects={wProjects}, clarity={wClarity}, bonus={wBonus}
-
-## Applicant
-Name: {name}
-Skills: {skills}
-Experience: {experience} years
-Education: {education}
-GitHub: {githubUrl}
-Motivation Answer: {motivationAnswer}
-Projects: {projectDescriptions}
-
-## Resume Text
-{resumeText}
-
----
-
-Provide your evaluation STRICTLY as a JSON object:
-
-{{
-  "overallScore": <number 0-100>,
-  "strengthSummary": "<concise paragraph of 2-3 sentences>",
-  "weaknessSummary": "<concise paragraph of 2-3 sentences>",
-  "strengths": ["<string>", "<string>", ...],
-  "weaknesses": ["<string>", "<string>", ...],
-  "fitRating": "<Excellent | Strong | Moderate | Weak>",
-  "reasoning": "<1-2 sentence explanation of the score>"
-}}
-
-Rules:
-- Be objective and evidence-based.
-- Only reference information present in the resume and form data.
-- Do NOT hallucinate skills or experience the candidate doesn't have.
-- Return ONLY the JSON. No markdown fences.
-`);
-
-/**
- * Run Layer 2 AI evaluation.
- */
-async function aiEvaluate(applicant, role) {
-  const llm = getLLM(0.15);
-  const chain = AI_EVALUATION_PROMPT.pipe(llm).pipe(new StringOutputParser());
-
-  const raw = await chain.invoke({
-    roleTitle: role.title,
-    requiredSkills: role.requiredSkills.join(', '),
-    preferredSkills: role.preferredSkills.join(', '),
-    experienceLevel: role.experienceLevel,
-    cultureDescription: role.cultureDescription || 'Not specified',
-    wSkills: role.weightConfig.skills,
-    wExperience: role.weightConfig.experience,
-    wProjects: role.weightConfig.projects,
-    wClarity: role.weightConfig.clarity,
-    wBonus: role.weightConfig.bonus,
-    name: applicant.name,
-    skills: (applicant.skills || []).join(', '),
-    experience: applicant.experience || 0,
-    education: applicant.education || 'N/A',
-    githubUrl: applicant.githubUrl || 'N/A',
-    motivationAnswer: applicant.motivationAnswer || 'N/A',
-    projectDescriptions: (applicant.projectDescriptions || []).join('; ') || 'N/A',
-    resumeText: (applicant.resumeText || '').slice(0, 4000),
-  });
-
-  try {
-    return JSON.parse(raw);
-  } catch {
-    console.error('[ScoringEngine] Failed to parse AI eval:', raw);
-    return {
-      overallScore: 0,
-      strengthSummary: '',
-      weaknessSummary: '',
-      strengths: [],
-      weaknesses: [],
-      fitRating: 'Weak',
-      reasoning: 'AI evaluation failed to parse.',
-    };
-  }
-}
+/* AI evaluation is delegated to candidateEvaluator.js */
 
 /* ================================================================
    COMBINED SCORING PIPELINE
@@ -311,8 +225,8 @@ async function runFullScoringPipeline(applicant, role) {
   // 2. Layer 1: Deterministic
   const det = deterministicScore(applicant, role);
 
-  // 3. Layer 2: AI evaluation
-  const ai = await aiEvaluate(applicant, role);
+  // 3. Layer 2: AI evaluation (candidateEvaluator)
+  const ai = await evaluateCandidate(applicant, role);
 
   // 4. RAG evaluation
   let rag = { contextualFitScore: 0, differentiators: [], concerns: [] };
@@ -331,13 +245,7 @@ async function runFullScoringPipeline(applicant, role) {
   );
 
   // Build summary
-  const aiSummary = [
-    ai.strengthSummary || '',
-    ai.weaknessSummary || '',
-    ai.reasoning || '',
-  ]
-    .filter(Boolean)
-    .join(' ');
+  const aiSummary = ai.summary || '';
 
   return {
     deterministicScore: det,
@@ -353,12 +261,11 @@ async function runFullScoringPipeline(applicant, role) {
 
 module.exports = {
   deterministicScore,
-  aiEvaluate,
   runFullScoringPipeline,
   // Export helpers for testing
   calcSkillMatch,
   calcExperienceScore,
   calcProjectDepth,
-  calcClarityScore,
+  calcCommunicationScore,
   calcBonusSignals,
 };

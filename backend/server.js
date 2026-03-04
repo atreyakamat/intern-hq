@@ -1,8 +1,8 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
+const connectDB = require('./config/db');
 
 dotenv.config();
 
@@ -18,20 +18,18 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 /* ---- MongoDB ---- */
-mongoose
-  .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/internsieve')
-  .then(() => console.log('[InternSieve] Connected to MongoDB'))
-  .catch((err) => {
-    console.error('[InternSieve] MongoDB connection error:', err.message);
-    process.exit(1);
-  });
+connectDB();
 
 /* ---- Routes ---- */
-const applicantRoutes = require('./routes/candidateRoutes');
+const apiRoutes = require('./routes/candidateRoutes');
 const roleRoutes = require('./routes/roleRoutes');
 
-app.use('/api/applicants', applicantRoutes);
+// Spec routes: POST /api/role, POST /api/apply, GET /api/applicants, POST /api/evaluate, POST /api/rank, POST /api/notify
+app.use('/api', apiRoutes);
+
+// Role routes: POST /api/role (also available), GET /api/roles, etc.
 app.use('/api/roles', roleRoutes);
+app.post('/api/role', require('./controllers/roleController').createRole);
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
@@ -41,7 +39,14 @@ app.get('/', (_req, res) => {
   res.json({
     name: 'InternSieve API',
     version: '1.0.0',
-    docs: '/api/health',
+    endpoints: {
+      'POST /api/role': 'Create internship role',
+      'POST /api/apply': 'Submit application (upload resumes)',
+      'GET /api/applicants': 'List applicants',
+      'POST /api/evaluate': 'Trigger AI evaluation',
+      'POST /api/rank': 'Rank applicants',
+      'POST /api/notify': 'Send accept/reject emails',
+    },
   });
 });
 

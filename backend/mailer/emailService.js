@@ -1,10 +1,12 @@
 /**
  * mailer/emailService.js
  * -------------------------------------------------
- * Nodemailer SMTP transport + send helper + logging.
+ * Nodemailer SMTP transport + HTML template support.
  * -------------------------------------------------
  */
 const nodemailer = require('nodemailer');
+const fs = require('fs');
+const path = require('path');
 const logger = require('../utils/logger');
 
 let transporter = null;
@@ -26,6 +28,36 @@ function getTransporter() {
   });
 
   return transporter;
+}
+
+/**
+ * Load an HTML template file and interpolate placeholders.
+ * Placeholders: {{name}}, {{roleTitle}}, {{#strengths}}...{{/strengths}}, etc.
+ *
+ * @param {string} templateName - 'accept' or 'reject'
+ * @param {Object} data         - Template variables
+ * @returns {string}            - Rendered HTML
+ */
+function renderTemplate(templateName, data) {
+  const templatePath = path.join(__dirname, 'templates', `${templateName}.html`);
+  let html = fs.readFileSync(templatePath, 'utf8');
+
+  // Simple {{key}} interpolation
+  for (const [key, value] of Object.entries(data)) {
+    if (typeof value === 'string') {
+      html = html.replace(new RegExp(`{{${key}}}`, 'g'), value);
+    }
+  }
+
+  // Handle {{#array}}...{{/array}} blocks (for strengths/weaknesses lists)
+  const blockPattern = /{{#(\w+)}}([\s\S]*?){{\/\1}}/g;
+  html = html.replace(blockPattern, (match, key, template) => {
+    const arr = data[key];
+    if (!Array.isArray(arr)) return '';
+    return arr.map((item) => template.replace(/{{\.}}/g, item)).join('');
+  });
+
+  return html;
 }
 
 /**
@@ -60,4 +92,4 @@ async function sendEmail(to, subject, textBody, htmlBody) {
   }
 }
 
-module.exports = { sendEmail, getTransporter };
+module.exports = { sendEmail, getTransporter, renderTemplate };

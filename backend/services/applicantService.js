@@ -2,42 +2,43 @@
  * services/applicantService.js
  * -------------------------------------------------
  * Business logic for applicant lifecycle:
- *   intake → parse → score → rank → email
+ *   apply → parse (Step 2)
+ *   evaluate → score + AI + RAG (Steps 3-6)
+ *   rank (Step 7 ranking)
+ *   compare (Step 7 comparative)
+ *   notify (Step 9 emails)
  * -------------------------------------------------
  */
 const Applicant = require('../models/Applicant');
 const Role = require('../models/Role');
 const { extractTextFromPDF, extractSkillKeywords } = require('../utils/resumeParser');
 const { runFullScoringPipeline } = require('../ai/scoringEngine');
-const { extractResumeInfo } = require('../ai/summaryGenerator');
-const { generateComparison, generateAcceptanceEmail, generateRejectionEmail } = require('../ai/summaryGenerator');
-const { sendEmail } = require('../mailer/emailService');
+const { extractResumeInfo, generateAcceptanceEmail, generateRejectionEmail } = require('../ai/candidateEvaluator');
+const { generateComparison } = require('../ai/comparisonEngine');
+const { sendEmail, renderTemplate } = require('../mailer/emailService');
 const logger = require('../utils/logger');
 
 /* ================================================================
-   INTAKE
+   STEP 2 — APPLICATION SUBMISSION (POST /apply)
    ================================================================ */
 
 /**
  * Process a single uploaded resume file and optional form data.
- *
- * @param {string} filePath   - Path to the uploaded PDF
- * @param {string} roleId     - ObjectId of the target role
- * @param {Object} formData   - Optional additional form fields
- * @returns {Object}          - Created Applicant document
+ * Parses the PDF, extracts info, stores in DB.
+ * Does NOT run evaluation — that is a separate step.
  */
 async function processResume(filePath, roleId, formData = {}) {
   const role = await Role.findById(roleId);
   if (!role) throw new Error('Role not found');
 
-  // 1. Extract text
+  // 1. Extract text (pdf-parse)
   const resumeText = await extractTextFromPDF(filePath);
   logger.info('ApplicantService', `Extracted ${resumeText.length} chars from resume`);
 
   // 2. Quick keyword extraction (non-AI)
   const quickSkills = extractSkillKeywords(resumeText);
 
-  // 3. AI-based info extraction
+  // 3. AI-based structured info extraction
   let extracted = {};
   try {
     extracted = (await extractResumeInfo(resumeText)) || {};
@@ -45,7 +46,7 @@ async function processResume(filePath, roleId, formData = {}) {
     logger.warn('ApplicantService', 'AI extraction failed', { error: err.message });
   }
 
-  // 4. Merge: form data overrides > AI extraction > defaults
+  // 4. Merge: form data › AI extraction › defaults
   const applicantData = {
     name: formData.name || extracted.name || 'Unknown',
     email: formData.email || extracted.email || `applicant_${Date.now()}@placeholder.com`,
@@ -67,22 +68,8 @@ async function processResume(filePath, roleId, formData = {}) {
   await applicant.save();
   logger.info('ApplicantService', `Applicant created: ${applicant.name} (${applicant._id})`);
 
-  // 5. Run full scoring pipeline
-  try {
-    const scores = await runFullScoringPipeline(applicant, role);
-    Object.assign(applicant, scores);
-    await applicant.save();
-    logger.info('ApplicantService', `Scored: ${applicant.name} → ${applicant.finalScore}`);
-  } catch (err) {
-    logger.error('ApplicantService', `Scoring failed for ${applicant.name}`, { error: err.message });
-  }
-
   return applicant;
 }
-
-/* ================================================================
-   BATCH PROCESSING
-   ================================================================ */
 
 /**
  * Process multiple resume files for a role.
@@ -102,15 +89,53 @@ async function processMultipleResumes(files, roleId, formDataArray = []) {
 
     // Clean up uploaded file
     const fs = require('fs');
-    try {
-      fs.unlinkSync(files[i].path);
-    } catch { /* ignore */ }
+    try { fs.unlinkSync(files[i].path); } catch { /* ignore */ }
   }
   return results;
 }
 
 /* ================================================================
-   RANKING
+   STEPS 3-6 — EVALUATE (POST /evaluate)
+   Embeds, scores deterministically, runs AI evaluation, RAG
+   ================================================================ */
+
+/**
+ * Run the full scoring pipeline for all un-evaluated applicants in a role,
+ * or for specific applicant IDs.
+ */
+async function evaluateApplicants(roleId, applicantIds = null) {
+  const role = await Role.findById(roleId);
+  if (!role) throw new Error('Role not found');
+
+  const query = { role: roleId };
+  if (applicantIds && applicantIds.length > 0) {
+    query._id = { $in: applicantIds };
+  } else {
+    // Only evaluate applicants that haven't been scored yet
+    query.finalScore = 0;
+  }
+
+  const applicants = await Applicant.find(query);
+  const results = [];
+
+  for (const applicant of applicants) {
+    try {
+      const scores = await runFullScoringPipeline(applicant, role);
+      Object.assign(applicant, scores);
+      await applicant.save();
+      logger.info('ApplicantService', `Evaluated: ${applicant.name} → ${applicant.finalScore}`);
+      results.push({ success: true, id: applicant._id, name: applicant.name, finalScore: applicant.finalScore });
+    } catch (err) {
+      logger.error('ApplicantService', `Evaluation failed for ${applicant.name}`, { error: err.message });
+      results.push({ success: false, id: applicant._id, name: applicant.name, error: err.message });
+    }
+  }
+
+  return results;
+}
+
+/* ================================================================
+   STEP 7 — RANKING (POST /rank)
    ================================================================ */
 
 /**
@@ -126,7 +151,7 @@ async function recalculateRanks(roleId) {
 }
 
 /* ================================================================
-   COMPARATIVE INTELLIGENCE
+   STEP 7 — COMPARATIVE INTELLIGENCE
    ================================================================ */
 
 /**
@@ -148,8 +173,77 @@ async function compareTopApplicants(roleId, topN = 10) {
 }
 
 /* ================================================================
-   STATUS + EMAIL
+   STEP 9 — EMAIL NOTIFICATION (POST /notify)
    ================================================================ */
+
+/**
+ * Send accept/reject notifications to specified applicants.
+ */
+async function notifyApplicants(applicantIds, action) {
+  const results = [];
+
+  for (const id of applicantIds) {
+    try {
+      const applicant = await Applicant.findById(id).populate('role');
+      if (!applicant) {
+        results.push({ success: false, id, error: 'Applicant not found' });
+        continue;
+      }
+
+      const role = applicant.role;
+      let emailContent;
+      let htmlBody;
+
+      if (action === 'accepted') {
+        applicant.hrStatus = 'accepted';
+        emailContent = await generateAcceptanceEmail(applicant, role);
+        try {
+          htmlBody = renderTemplate('accept', {
+            name: applicant.name,
+            roleTitle: role.title,
+            strengths: applicant.strengths || [],
+          });
+        } catch { /* HTML template optional, fallback to text */ }
+      } else {
+        applicant.hrStatus = 'rejected';
+        emailContent = await generateRejectionEmail(applicant, role);
+        try {
+          htmlBody = renderTemplate('reject', {
+            name: applicant.name,
+            roleTitle: role.title,
+            weaknesses: applicant.weaknesses || [],
+          });
+        } catch { /* HTML template optional */ }
+      }
+
+      const result = await sendEmail(
+        applicant.email,
+        emailContent.subject,
+        emailContent.body,
+        htmlBody
+      );
+
+      applicant.emailSent = result.success;
+      applicant.emailLog.push({
+        type: action === 'accepted' ? 'acceptance' : 'rejection',
+        subject: emailContent.subject,
+        body: emailContent.body,
+        status: result.success ? 'sent' : 'failed',
+        messageId: result.messageId || '',
+        error: result.error || '',
+      });
+
+      await applicant.save();
+      logger.info('ApplicantService', `${action} email → ${applicant.email}`, { success: result.success });
+      results.push({ success: result.success, id, name: applicant.name, messageId: result.messageId });
+    } catch (err) {
+      logger.error('ApplicantService', `Notify failed for ${id}`, { error: err.message });
+      results.push({ success: false, id, error: err.message });
+    }
+  }
+
+  return results;
+}
 
 /**
  * Update applicant HR status and optionally send email.
@@ -161,42 +255,8 @@ async function updateStatus(applicantId, newStatus, sendNotification = true) {
   applicant.hrStatus = newStatus;
 
   if (sendNotification && (newStatus === 'accepted' || newStatus === 'rejected')) {
-    try {
-      let emailContent;
-      if (newStatus === 'accepted') {
-        emailContent = await generateAcceptanceEmail(applicant, applicant.role);
-      } else {
-        emailContent = await generateRejectionEmail(applicant, applicant.role);
-      }
-
-      const result = await sendEmail(
-        applicant.email,
-        emailContent.subject,
-        emailContent.body
-      );
-
-      applicant.emailLog.push({
-        type: newStatus === 'accepted' ? 'acceptance' : 'rejection',
-        subject: emailContent.subject,
-        body: emailContent.body,
-        status: result.success ? 'sent' : 'failed',
-        messageId: result.messageId || '',
-        error: result.error || '',
-      });
-
-      logger.info('ApplicantService', `${newStatus} email → ${applicant.email}`, {
-        success: result.success,
-      });
-    } catch (err) {
-      logger.error('ApplicantService', `Email failed for ${applicant.name}`, { error: err.message });
-      applicant.emailLog.push({
-        type: newStatus === 'accepted' ? 'acceptance' : 'rejection',
-        subject: 'Failed to generate',
-        body: '',
-        status: 'failed',
-        error: err.message,
-      });
-    }
+    const results = await notifyApplicants([applicantId], newStatus);
+    return applicant;
   }
 
   await applicant.save();
@@ -207,11 +267,20 @@ async function updateStatus(applicantId, newStatus, sendNotification = true) {
  * Bulk status update.
  */
 async function bulkUpdateStatus(applicantIds, newStatus, sendNotification = false) {
+  if (sendNotification && (newStatus === 'accepted' || newStatus === 'rejected')) {
+    // Update status and send emails in one go
+    for (const id of applicantIds) {
+      const a = await Applicant.findById(id);
+      if (a) { a.hrStatus = newStatus; await a.save(); }
+    }
+    return notifyApplicants(applicantIds, newStatus);
+  }
+
   const results = [];
   for (const id of applicantIds) {
     try {
-      const applicant = await updateStatus(id, newStatus, sendNotification);
-      results.push({ success: true, id, name: applicant.name });
+      const a = await Applicant.findByIdAndUpdate(id, { hrStatus: newStatus }, { new: true });
+      results.push({ success: true, id, name: a?.name });
     } catch (err) {
       results.push({ success: false, id, error: err.message });
     }
@@ -262,7 +331,6 @@ async function getAnalytics(roleId) {
     if (fitCounts[a.fitRating] !== undefined) fitCounts[a.fitRating]++;
   });
 
-  // Top skills
   const skillMap = {};
   applicants.forEach((a) =>
     (a.skills || []).forEach((s) => {
@@ -286,8 +354,10 @@ async function getAnalytics(roleId) {
 module.exports = {
   processResume,
   processMultipleResumes,
+  evaluateApplicants,
   recalculateRanks,
   compareTopApplicants,
+  notifyApplicants,
   updateStatus,
   bulkUpdateStatus,
   listApplicants,

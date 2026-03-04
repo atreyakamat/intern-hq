@@ -2,12 +2,57 @@
  * controllers/applicantController.js
  * -------------------------------------------------
  * Handles HTTP layer for applicant operations.
- * All business logic delegated to applicantService.
+ * Maps to spec routes: POST /apply, GET /applicants,
+ * POST /evaluate, POST /rank, POST /notify
  * -------------------------------------------------
  */
 const applicantService = require('../services/applicantService');
 
-exports.getAllApplicants = async (req, res) => {
+/* ---- POST /apply — Submit application (upload resumes) ---- */
+exports.apply = async (req, res) => {
+  try {
+    const files = req.files;
+    const { roleId, name, email, skills, experience, githubUrl, portfolioUrl, motivationAnswer } = req.body;
+
+    if (!files || files.length === 0) {
+      return res.status(400).json({ message: 'No resume files uploaded' });
+    }
+    if (!roleId) {
+      return res.status(400).json({ message: 'roleId is required' });
+    }
+
+    // Build form data from body fields (used for all resumes if provided)
+    const formData = {};
+    if (name) formData.name = name;
+    if (email) formData.email = email;
+    if (skills) formData.skills = typeof skills === 'string' ? skills.split(',').map(s => s.trim()) : skills;
+    if (experience) formData.experience = Number(experience);
+    if (githubUrl) formData.githubUrl = githubUrl;
+    if (portfolioUrl) formData.portfolioUrl = portfolioUrl;
+    if (motivationAnswer) formData.motivationAnswer = motivationAnswer;
+
+    const results = await applicantService.processMultipleResumes(
+      files,
+      roleId,
+      files.map(() => ({ ...formData }))
+    );
+
+    const successful = results.filter((r) => r.success);
+    const failed = results.filter((r) => !r.success);
+
+    res.status(201).json({
+      message: `${successful.length} application(s) submitted, ${failed.length} failed`,
+      applicants: successful.map((r) => r.applicant),
+      errors: failed,
+    });
+  } catch (error) {
+    console.error('Error processing application:', error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/* ---- GET /applicants — List all applicants ---- */
+exports.getApplicants = async (req, res) => {
   try {
     const filters = {
       roleId: req.query.roleId,
@@ -23,6 +68,7 @@ exports.getAllApplicants = async (req, res) => {
   }
 };
 
+/* ---- GET /applicants/:id — Get applicant detail ---- */
 exports.getApplicantById = async (req, res) => {
   try {
     const applicant = await applicantService.getApplicantById(req.params.id);
@@ -33,7 +79,78 @@ exports.getApplicantById = async (req, res) => {
   }
 };
 
-exports.updateApplicantStatus = async (req, res) => {
+/* ---- POST /evaluate — Trigger AI evaluation ---- */
+exports.evaluate = async (req, res) => {
+  try {
+    const { roleId, applicantIds } = req.body;
+
+    if (!roleId) {
+      return res.status(400).json({ message: 'roleId is required' });
+    }
+
+    const results = await applicantService.evaluateApplicants(roleId, applicantIds);
+
+    const successful = results.filter((r) => r.success);
+    const failed = results.filter((r) => !r.success);
+
+    res.json({
+      message: `${successful.length} evaluated, ${failed.length} failed`,
+      results,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/* ---- POST /rank — Rank applicants by score ---- */
+exports.rank = async (req, res) => {
+  try {
+    const { roleId } = req.body;
+
+    if (!roleId) {
+      return res.status(400).json({ message: 'roleId is required' });
+    }
+
+    const applicants = await applicantService.recalculateRanks(roleId);
+    res.json({
+      message: `Ranked ${applicants.length} applicants`,
+      applicants: applicants.map((a) => ({
+        _id: a._id,
+        name: a.name,
+        rank: a.rank,
+        finalScore: a.finalScore,
+        fitRating: a.fitRating,
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/* ---- POST /notify — Send accept/reject emails ---- */
+exports.notify = async (req, res) => {
+  try {
+    const { applicantIds, action } = req.body;
+
+    if (!applicantIds || applicantIds.length === 0) {
+      return res.status(400).json({ message: 'applicantIds array is required' });
+    }
+    if (!['accepted', 'rejected'].includes(action)) {
+      return res.status(400).json({ message: 'action must be "accepted" or "rejected"' });
+    }
+
+    const results = await applicantService.notifyApplicants(applicantIds, action);
+    res.json({
+      message: `Notifications sent`,
+      results,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/* ---- PATCH /applicants/:id/status — Update status (quick action) ---- */
+exports.updateStatus = async (req, res) => {
   try {
     const { status, sendNotification } = req.body;
     const applicant = await applicantService.updateStatus(
@@ -47,37 +164,7 @@ exports.updateApplicantStatus = async (req, res) => {
   }
 };
 
-exports.uploadResumes = async (req, res) => {
-  try {
-    const files = req.files;
-    const { roleId } = req.body;
-
-    if (!files || files.length === 0) {
-      return res.status(400).json({ message: 'No files uploaded' });
-    }
-    if (!roleId) {
-      return res.status(400).json({ message: 'roleId is required' });
-    }
-
-    const results = await applicantService.processMultipleResumes(files, roleId);
-
-    // Recalculate ranks after all are processed
-    await applicantService.recalculateRanks(roleId);
-
-    const successful = results.filter((r) => r.success);
-    const failed = results.filter((r) => !r.success);
-
-    res.status(201).json({
-      message: `${successful.length} resumes processed, ${failed.length} failed`,
-      applicants: successful.map((r) => r.applicant),
-      errors: failed,
-    });
-  } catch (error) {
-    console.error('Error processing resumes:', error);
-    res.status(500).json({ message: error.message });
-  }
-};
-
+/* ---- POST /bulk-action — Bulk status/email ---- */
 exports.bulkAction = async (req, res) => {
   try {
     const { action, applicantIds, sendNotification } = req.body;
@@ -92,7 +179,8 @@ exports.bulkAction = async (req, res) => {
   }
 };
 
-exports.compareTopApplicants = async (req, res) => {
+/* ---- GET /applicants/compare/:roleId — Comparative intelligence ---- */
+exports.compare = async (req, res) => {
   try {
     const { roleId } = req.params;
     const topN = parseInt(req.query.topN) || 10;
@@ -103,24 +191,12 @@ exports.compareTopApplicants = async (req, res) => {
   }
 };
 
+/* ---- GET /applicants/analytics — Dashboard stats ---- */
 exports.getAnalytics = async (req, res) => {
   try {
     const roleId = req.query.roleId || null;
     const analytics = await applicantService.getAnalytics(roleId);
     res.json(analytics);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-exports.recalculateRanks = async (req, res) => {
-  try {
-    const { roleId } = req.params;
-    const applicants = await applicantService.recalculateRanks(roleId);
-    res.json({
-      message: `Ranks recalculated for ${applicants.length} applicants`,
-      applicants,
-    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

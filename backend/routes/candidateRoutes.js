@@ -1,6 +1,22 @@
+/**
+ * routes/candidateRoutes.js
+ * -------------------------------------------------
+ * API routes mapping to spec:
+ *   POST   /apply             — Submit application
+ *   GET    /applicants        — List applicants
+ *   GET    /applicants/:id    — Get applicant detail
+ *   PATCH  /applicants/:id/status — Quick status update
+ *   POST   /evaluate          — Trigger AI evaluation
+ *   POST   /rank              — Rank applicants
+ *   POST   /notify            — Send emails
+ *   POST   /bulk-action       — Bulk actions
+ *   GET    /applicants/compare/:roleId — Comparison
+ *   GET    /applicants/analytics       — Stats
+ * -------------------------------------------------
+ */
 const express = require('express');
 const router = express.Router();
-const applicantController = require('../controllers/candidateController');
+const ctrl = require('../controllers/candidateController');
 const multer = require('multer');
 
 const upload = multer({
@@ -16,24 +32,18 @@ const upload = multer({
   },
 });
 
-// Analytics
-router.get('/analytics', applicantController.getAnalytics);
+// ----- Spec routes -----
+router.post('/apply', upload.array('resumes', 20), ctrl.apply);
+router.get('/applicants', ctrl.getApplicants);
+router.post('/evaluate', ctrl.evaluate);
+router.post('/rank', ctrl.rank);
+router.post('/notify', ctrl.notify);
 
-// Comparison
-router.get('/compare/:roleId', applicantController.compareTopApplicants);
-
-// Recalculate ranks
-router.post('/ranks/:roleId', applicantController.recalculateRanks);
-
-// Bulk actions
-router.post('/bulk-action', applicantController.bulkAction);
-
-// Upload
-router.post('/upload', upload.array('resumes', 20), applicantController.uploadResumes);
-
-// CRUD
-router.get('/', applicantController.getAllApplicants);
-router.get('/:id', applicantController.getApplicantById);
-router.patch('/:id/status', applicantController.updateApplicantStatus);
+// ----- Extended routes -----
+router.get('/applicants/analytics', ctrl.getAnalytics);
+router.get('/applicants/compare/:roleId', ctrl.compare);
+router.post('/applicants/bulk-action', ctrl.bulkAction);
+router.get('/applicants/:id', ctrl.getApplicantById);
+router.patch('/applicants/:id/status', ctrl.updateStatus);
 
 module.exports = router;

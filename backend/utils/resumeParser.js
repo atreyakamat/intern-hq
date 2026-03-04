@@ -1,14 +1,19 @@
 /**
  * utils/resumeParser.js
  * -------------------------------------------------
- * Handles PDF/DOCX text extraction and cleaning.
+ * Handles PDF text extraction using pdf-parse.
+ * Text cleaning is delegated to textCleaner.js.
  * -------------------------------------------------
  */
 const fs = require('fs');
 const pdf = require('pdf-parse');
+const { cleanText } = require('./textCleaner');
 
 /**
  * Extract text from a PDF file buffer or path.
+ *
+ * @param {string|Buffer} filePathOrBuffer - Path to PDF or raw buffer
+ * @returns {string} Cleaned text content
  */
 async function extractTextFromPDF(filePathOrBuffer) {
   let buffer;
@@ -19,18 +24,6 @@ async function extractTextFromPDF(filePathOrBuffer) {
   }
   const data = await pdf(buffer);
   return cleanText(data.text);
-}
-
-/**
- * Clean and normalise extracted resume text.
- */
-function cleanText(raw) {
-  return raw
-    .replace(/\r\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')        // collapse multiple blank lines
-    .replace(/[ \t]{2,}/g, ' ')        // collapse multiple spaces
-    .replace(/[^\x20-\x7E\n]/g, '')    // strip non-printable chars
-    .trim();
 }
 
 /**

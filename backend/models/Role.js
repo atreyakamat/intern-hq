@@ -26,10 +26,10 @@ const roleSchema = new mongoose.Schema(
       default: 'Entry Level',
     },
     weightConfig: {
-      skills: { type: Number, default: 0.35, min: 0, max: 1 },
-      experience: { type: Number, default: 0.2, min: 0, max: 1 },
-      projects: { type: Number, default: 0.25, min: 0, max: 1 },
-      clarity: { type: Number, default: 0.15, min: 0, max: 1 },
+      skills: { type: Number, default: 0.4, min: 0, max: 1 },
+      experience: { type: Number, default: 0.25, min: 0, max: 1 },
+      projects: { type: Number, default: 0.2, min: 0, max: 1 },
+      communication: { type: Number, default: 0.1, min: 0, max: 1 },
       bonus: { type: Number, default: 0.05, min: 0, max: 1 },
     },
     cultureDescription: {
@@ -52,7 +52,7 @@ const roleSchema = new mongoose.Schema(
 
 roleSchema.pre('save', function (next) {
   const w = this.weightConfig;
-  const total = w.skills + w.experience + w.projects + w.clarity + w.bonus;
+  const total = w.skills + w.experience + w.projects + w.communication + w.bonus;
   if (Math.abs(total - 1.0) > 0.01) {
     return next(
       new Error(`Weight config must sum to 1.0 (current: ${total.toFixed(2)})`)

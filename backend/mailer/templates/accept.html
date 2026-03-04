@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Internship Acceptance</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f1f5f9; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+    .card { background: #ffffff; border-radius: 12px; padding: 40px 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .header { text-align: center; margin-bottom: 24px; }
+    .logo { font-size: 24px; font-weight: 700; color: #4f46e5; }
+    .logo span { color: #1e293b; }
+    h1 { color: #059669; font-size: 22px; margin: 16px 0 8px; }
+    p { color: #475569; font-size: 15px; line-height: 1.7; margin: 10px 0; }
+    .strengths { background: #ecfdf5; border-left: 4px solid #059669; border-radius: 4px; padding: 14px 18px; margin: 18px 0; }
+    .strengths h3 { color: #059669; font-size: 14px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .strengths ul { margin: 0; padding-left: 18px; color: #065f46; }
+    .strengths li { font-size: 14px; margin: 4px 0; }
+    .next-steps { background: #eef2ff; border-radius: 8px; padding: 16px 18px; margin: 18px 0; }
+    .next-steps h3 { color: #4338ca; font-size: 14px; margin: 0 0 8px; }
+    .next-steps p { color: #3730a3; font-size: 14px; margin: 4px 0; }
+    .footer { text-align: center; margin-top: 24px; padding-top: 18px; border-top: 1px solid #e2e8f0; }
+    .footer p { color: #94a3b8; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <div class="logo"><span>Intern</span>Sieve</div>
+        <h1>🎉 Congratulations, {{name}}!</h1>
+      </div>
+
+      <p>We are excited to inform you that you have been selected for the <strong>{{roleTitle}}</strong> internship!</p>
+
+      <div class="strengths">
+        <h3>Your Strengths That Stood Out</h3>
+        <ul>
+          {{#strengths}}
+          <li>{{.}}</li>
+          {{/strengths}}
+        </ul>
+      </div>
+
+      <div class="next-steps">
+        <h3>Next Steps</h3>
+        <p>Our team will reach out within 2 business days with onboarding details and interview scheduling information.</p>
+        <p>In the meantime, feel free to prepare any questions you have about the role and our team.</p>
+      </div>
+
+      <p>We look forward to having you on board!</p>
+
+      <p>Best regards,<br /><strong>The HR Team</strong></p>
+
+      <div class="footer">
+        <p>This email was sent by InternSieve — AI-Powered Internship Evaluation Platform</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Application Update</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f1f5f9; margin: 0; padding: 0; }
+    .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+    .card { background: #ffffff; border-radius: 12px; padding: 40px 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .header { text-align: center; margin-bottom: 24px; }
+    .logo { font-size: 24px; font-weight: 700; color: #4f46e5; }
+    .logo span { color: #1e293b; }
+    h1 { color: #1e293b; font-size: 22px; margin: 16px 0 8px; }
+    p { color: #475569; font-size: 15px; line-height: 1.7; margin: 10px 0; }
+    .feedback { background: #fefce8; border-left: 4px solid #ca8a04; border-radius: 4px; padding: 14px 18px; margin: 18px 0; }
+    .feedback h3 { color: #a16207; font-size: 14px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .feedback ul { margin: 0; padding-left: 18px; color: #854d0e; }
+    .feedback li { font-size: 14px; margin: 4px 0; }
+    .encourage { background: #eef2ff; border-radius: 8px; padding: 16px 18px; margin: 18px 0; }
+    .encourage p { color: #3730a3; font-size: 14px; margin: 4px 0; }
+    .footer { text-align: center; margin-top: 24px; padding-top: 18px; border-top: 1px solid #e2e8f0; }
+    .footer p { color: #94a3b8; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="header">
+        <div class="logo"><span>Intern</span>Sieve</div>
+        <h1>Application Update</h1>
+      </div>
+
+      <p>Hello {{name}},</p>
+
+      <p>Thank you for applying for the <strong>{{roleTitle}}</strong> internship. We truly appreciate your interest and the time you invested in your application.</p>
+
+      <p>While we were impressed with your profile, we have selected candidates whose experience more closely matched the role requirements at this time.</p>
+
+      <div class="feedback">
+        <h3>Areas to Improve</h3>
+        <ul>
+          {{#weaknesses}}
+          <li>{{.}}</li>
+          {{/weaknesses}}
+        </ul>
+      </div>
+
+      <div class="encourage">
+        <p>This decision does not diminish the value of your skills. We encourage you to continue developing your expertise and to apply again for future openings.</p>
+      </div>
+
+      <p>We wish you every success in your career journey.</p>
+
+      <p>Best regards,<br /><strong>The HR Team</strong></p>
+
+      <div class="footer">
+        <p>This email was sent by InternSieve — AI-Powered Internship Evaluation Platform</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
