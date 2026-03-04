@@ -17,7 +17,7 @@ const FIT_STYLES = {
   Weak:      'bg-red-100 text-red-800',
 };
 
-export default function ApplicantTable({ applicants, onStatusChange, loading }) {
+export default function ApplicantTable({ applicants, onStatusChange, onRowClick, loading }) {
   const navigate = useNavigate();
 
   if (loading) {
@@ -58,7 +58,7 @@ export default function ApplicantTable({ applicants, onStatusChange, loading }) 
               <tr
                 key={a._id}
                 className="hover:bg-slate-50/80 transition cursor-pointer"
-                onClick={() => navigate(`/applicants/${a._id}`)}
+                onClick={() => onRowClick ? onRowClick(a._id) : navigate(`/applicants/${a._id}`)}
               >
                 {/* Rank */}
                 <td className="px-4 py-3 font-mono text-slate-500">

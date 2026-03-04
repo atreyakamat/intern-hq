@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { API_BASE_URL } from '../../config';
+import { getApplicantById, updateApplicantStatus } from '../../api/api';
 import ScoreBadge from './ScoreBadge';
 import {
   ArrowLeft, Mail, Github, Linkedin, Globe, CheckCircle, XCircle,
@@ -25,7 +24,7 @@ export default function ApplicantDetail() {
   const fetch = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${API_BASE_URL}/api/applicants/${id}`);
+      const res = await getApplicantById(id);
       setApplicant(res.data);
     } catch (err) {
       console.error('Error:', err);
@@ -39,10 +38,7 @@ export default function ApplicantDetail() {
   const handleStatus = async (status) => {
     try {
       setActionLoading(true);
-      await axios.patch(`${API_BASE_URL}/api/applicants/${id}/status`, {
-        status,
-        sendNotification: true,
-      });
+      await updateApplicantStatus(id, status, true);
       await fetch();
     } catch (err) {
       console.error('Status update error:', err);
@@ -141,7 +137,7 @@ export default function ApplicantDetail() {
               { label: 'Skill Match', val: det.skillMatch },
               { label: 'Experience', val: det.experienceScore },
               { label: 'Project Depth', val: det.projectDepth },
-              { label: 'Clarity', val: det.clarityScore },
+              { label: 'Communication', val: det.communication },
               { label: 'Bonus Signals', val: det.bonusSignals },
             ].map(({ label, val }) => (
               <div key={label}>

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../../config';
+import { applyToRole, getRoles } from '../../api/api';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Upload, FileText, ArrowLeft, Check, AlertCircle, Plus } from 'lucide-react';
 
@@ -18,7 +17,7 @@ export default function ResumeUpload() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/roles`);
+        const res = await getRoles();
         setRoles(res.data);
         if (!selectedRole && res.data.length > 0) setSelectedRole(res.data[0]._id);
       } catch (err) {
@@ -58,9 +57,7 @@ export default function ResumeUpload() {
     try {
       setUploading(true);
       setStatus({ type: 'info', message: 'Uploading and processing resumes — this may take a moment...' });
-      const res = await axios.post(`${API_BASE_URL}/api/applicants/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const res = await applyToRole(formData);
       setStatus({ type: 'success', message: res.data.message || 'Upload successful!' });
       setFiles([]);
       setTimeout(() => navigate('/'), 2500);

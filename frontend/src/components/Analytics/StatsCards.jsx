@@ -8,7 +8,7 @@ const CARDS = [
   { key: 'rejected',        label: 'Rejected',             icon: XCircle,     color: 'text-red-600 bg-red-50' },
 ];
 
-export default function StatsOverview({ stats }) {
+export default function StatsCards({ stats }) {
   if (!stats) return null;
 
   const values = {
