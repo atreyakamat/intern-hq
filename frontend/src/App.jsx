@@ -1,33 +1,25 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import CandidateDashboard from './components/Dashboard/CandidateDashboard';
-import CandidateDetail from './components/Candidates/CandidateDetail';
+import Navbar from './components/Layout/Navbar';
+import Footer from './components/Layout/Footer';
+import ApplicantDashboard from './components/Dashboard/ApplicantDashboard';
+import ApplicantDetail from './components/Applicants/ApplicantDetail';
 import ResumeUpload from './components/Upload/ResumeUpload';
 import CreateRole from './components/Roles/CreateRole';
-// Import your existing components
-import Navbar from './components/Navbar'; // Your existing navbar
-import Footer from './components/Footer'; // Your existing footer
-import Login from './components/Auth/Login'; // Your existing login
-import Register from './components/Auth/Register'; // Your existing register
-// Other imports...
+import RoleList from './components/Roles/RoleList';
 
 function App() {
   return (
     <Router>
-      <div className="app">
+      <div className="flex flex-col min-h-screen bg-slate-50">
         <Navbar />
-        <main className="main-content">
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Routes>
-            {/* Use the new dashboard as your main route */}
-            <Route path="/" element={<CandidateDashboard />} />
-            <Route path="/candidates/:id" element={<CandidateDetail />} />
+            <Route path="/" element={<ApplicantDashboard />} />
+            <Route path="/applicants/:id" element={<ApplicantDetail />} />
             <Route path="/upload" element={<ResumeUpload />} />
+            <Route path="/roles" element={<RoleList />} />
             <Route path="/roles/new" element={<CreateRole />} />
-            
-            {/* Keep your existing routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            {/* Other routes... */}
           </Routes>
         </main>
         <Footer />

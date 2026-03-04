@@ -1,14 +1,13 @@
-// Environment-based configuration
-const dev = {
-  API_BASE_URL: 'http://localhost:5000',
+// InternSieve frontend configuration
+const config = {
+  development: {
+    API_BASE_URL: 'http://localhost:5000',
+  },
+  production: {
+    API_BASE_URL: '',  // same-origin in production
+  },
 };
 
-const prod = {
-  API_BASE_URL: '/api', // Relative path for production
-};
-
-// Determine which environment we're in
-const config = process.env.NODE_ENV === 'production' ? prod : dev;
-
-export const API_BASE_URL = config.API_BASE_URL;
+const env = import.meta.env.MODE || 'development';
+export const API_BASE_URL = config[env]?.API_BASE_URL || config.development.API_BASE_URL;
 export default config;
