@@ -11,28 +11,46 @@ InternSieve automates the screening and ranking of internship applicants using a
 ```
 backend/
 ├── ai/                  # AI layer (LangChain, OpenAI, FAISS)
-│   ├── embedding.js         – Vector embedding & FAISS store
-│   ├── ragPipeline.js       – Retrieval-Augmented Generation evaluation
-│   ├── scoringEngine.js     – Hybrid scoring (deterministic + AI + RAG)
-│   └── summaryGenerator.js  – Comparison & email generation
+│   ├── candidateEvaluator.js – Resume extraction, AI evaluation, email gen
+│   ├── comparisonEngine.js   – Comparative analysis of top applicants
+│   ├── embedding.js          – Vector embedding & FAISS store
+│   ├── ragPipeline.js        – Retrieval-Augmented Generation evaluation
+│   ├── scoringEngine.js      – Hybrid scoring (deterministic + AI + RAG)
+│   └── summaryGenerator.js   – Re-exports from evaluator & comparison
+├── config/
+│   └── db.js                 – MongoDB connection handler
 ├── controllers/         # Express request handlers
-├── mailer/              # Nodemailer email service & templates
+├── mailer/              # Nodemailer email service & HTML templates
+│   ├── emailService.js       – Send emails, render templates
+│   └── templates/
+│       ├── accept.html       – Acceptance email template
+│       └── reject.html       – Rejection email template
 ├── models/              # Mongoose schemas (Role, Applicant)
 ├── routes/              # Express route definitions
 ├── services/            # Business logic layer
-├── utils/               # Resume parsing, logging
+├── utils/               # Resume parsing, text cleaning, logging
+│   ├── resumeParser.js
+│   ├── textCleaner.js
+│   └── logger.js
 └── server.js            # Entry point
 
 frontend/
 ├── src/
+│   ├── api/
+│   │   └── api.js           – Centralized Axios API client
 │   ├── components/
 │   │   ├── Analytics/       – StatsCards
 │   │   ├── Applicants/      – ApplicantDetail, ScoreBadge
-│   │   ├── Dashboard/       – ApplicantDashboard, Table, ComparisonPanel
+│   │   ├── Dashboard/       – ApplicantTable, ComparisonPanel
 │   │   ├── Filters/         – FilterBar
 │   │   ├── Layout/          – Navbar, Footer
 │   │   ├── Roles/           – CreateRole, RoleList
 │   │   └── Upload/          – ResumeUpload
+│   ├── pages/
+│   │   ├── DashboardPage.jsx    – Main HR dashboard with workflow actions
+│   │   ├── RoleSetupPage.jsx    – Role listing & creation
+│   │   ├── ApplicantCard.jsx    – Card component for applicant display
+│   │   └── ApplicantModal.jsx   – Modal for applicant detail view
 │   ├── App.jsx
 │   └── config.js
 └── vite.config.js
@@ -56,12 +74,13 @@ frontend/
 
 1. **Role Creation** — Define roles with required/preferred skills, experience level, culture description, and 5 configurable scoring weights.
 2. **Application Intake** — Drag-and-drop multi-resume upload (PDF/DOCX), parsed via `pdf-parse`.
-3. **Resume Parsing** — Extracts text, skills, contact info; AI-assisted structured extraction.
+3. **Resume Parsing** — Extracts text, skills, contact info; AI-assisted structured extraction via `candidateEvaluator.js`.
 4. **RAG Pipeline** — Embeds resumes & role descriptions into FAISS; retrieves relevant chunks at evaluation time.
-5. **Hybrid Scoring** — Three-layer formula: **45% deterministic** (skill match, experience, project depth, clarity, bonus signals) + **40% AI reasoning** (GPT-4o-mini evaluation) + **15% RAG contextual fit**.
-6. **Comparative Intelligence** — AI-generated side-by-side analysis of top applicants per role.
-7. **HR Dashboard** — Real-time stats, filterable/sortable applicant table, score breakdown, accept/reject workflow.
-8. **Email Automation** — AI-generated personalised acceptance & rejection emails sent via SMTP.
+5. **Hybrid Scoring** — Three-layer formula: **45% deterministic** (skill match, experience, project depth, communication, bonus signals) + **40% AI reasoning** (GPT-4o-mini evaluation) + **15% RAG contextual fit**.
+6. **Step-by-step Workflow** — Separate API steps: Upload → Evaluate → Rank → Notify.
+7. **Comparative Intelligence** — AI-generated side-by-side analysis of top applicants per role.
+8. **HR Dashboard** — Real-time stats, filterable/sortable applicant table, score breakdown, modal detail view, accept/reject workflow.
+9. **Email Automation** — AI-generated personalised acceptance & rejection emails sent via SMTP with HTML templates.
 
 ---
 
@@ -128,23 +147,26 @@ Create `backend/.env` from the provided `.env.example`:
 
 | Method | Path | Description |
 |--------|------|-------------|
+| `POST` | `/api/role` | Create a new role (spec endpoint) |
 | `GET` | `/api/roles` | List all roles |
 | `GET` | `/api/roles/:id` | Get role by ID |
-| `POST` | `/api/roles` | Create a new role |
+| `POST` | `/api/roles` | Create a new role (alternative) |
 | `PUT` | `/api/roles/:id` | Update a role |
 
-### Applicants
+### Applicants (Workflow Pipeline)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/api/applicants` | List applicants (query: roleId, hrStatus, minScore, skills, sortBy) |
+| `POST` | `/api/apply` | Submit application — upload resumes (multipart, max 20 files) |
+| `GET` | `/api/applicants` | List applicants (query: roleId, status, minScore, sort) |
 | `GET` | `/api/applicants/:id` | Get applicant detail |
-| `POST` | `/api/applicants/upload` | Upload resumes (multipart, max 20 files) |
-| `PATCH` | `/api/applicants/:id/status` | Update status (pending / reviewing / accepted / rejected) |
+| `POST` | `/api/evaluate` | Trigger AI evaluation (body: roleId, applicantIds?) |
+| `POST` | `/api/rank` | Rank applicants (body: roleId) |
+| `POST` | `/api/notify` | Send accept/reject emails (body: applicantIds, action) |
+| `PATCH` | `/api/applicants/:id/status` | Quick status update |
 | `POST` | `/api/applicants/bulk-action` | Bulk status update |
 | `GET` | `/api/applicants/compare/:roleId` | AI comparative analysis of top applicants |
 | `GET` | `/api/applicants/analytics` | Dashboard analytics (query: roleId) |
-| `POST` | `/api/applicants/ranks/:roleId` | Recalculate rankings |
 
 ### Health
 
@@ -160,11 +182,11 @@ Create `backend/.env` from the provided `.env.example`:
 finalScore = (deterministicScore × 0.45) + (aiScore × 0.40) + (ragScore × 0.15)
 ```
 
-**Deterministic sub-scores** (weights configurable per role):
+**Deterministic sub-scores** (weights configurable per role, defaults: 0.4/0.25/0.2/0.1/0.05):
 - **Skill Match** — overlap ratio of required (70%) + preferred (30%) skills
 - **Experience Score** — proximity to target experience level
 - **Project Depth** — count, description length, technical keyword density
-- **Clarity Score** — resume length, sentence structure, quality indicators
+- **Communication** — resume length, sentence structure, quality indicators
 - **Bonus Signals** — GitHub, LinkedIn, portfolio, education keywords
 
 **AI Score** — GPT-4o-mini evaluates the applicant holistically against the role description.

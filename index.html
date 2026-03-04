@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InternSieve — AI-Powered Internship Evaluation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --primary: #6366f1;
+            --secondary: #a855f7;
+            --accent: #22d3ee;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-refraction: rgba(255, 255, 255, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-dark);
+            color: #f8fafc;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Animated Background */
+        .bg-blobs {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            background: radial-gradient(circle at 50% 50%, #1e293b 0%, #0f172a 100%);
+        }
+
+        .blob {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.15;
+            animation: move 20s infinite alternate;
+        }
+
+        .blob-1 { top: -100px; left: -100px; }
+        .blob-2 { bottom: -100px; right: -100px; background: linear-gradient(135deg, var(--secondary) 0%, var(--accent) 100%); animation-delay: -5s; }
+        .blob-3 { top: 40%; left: 60%; background: linear-gradient(135deg, var(--accent) 0%, var(--primary) 100%); animation-delay: -10s; }
+
+        @keyframes move {
+            from { transform: translate(0, 0) scale(1); }
+            to { transform: translate(100px, 100px) scale(1.2); }
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Navbar */
+        nav {
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--accent), var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links a {
+            color: #94a3b8;
+            text-decoration: none;
+            margin-left: 2rem;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #fff;
+        }
+
+        /* Glassmorphism Refraction Effect */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s, border 0.3s;
+        }
+
+        .glass::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 24px;
+            padding: 1px;
+            background: linear-gradient(135deg, var(--glass-refraction) 0%, transparent 50%, var(--glass-refraction) 100%);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+        /* Hero Section */
+        header {
+            padding: 100px 0 60px;
+            text-align: center;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 100px;
+            color: var(--accent);
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            font-size: clamp(3rem, 8vw, 5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 24px;
+            letter-spacing: -2px;
+        }
+
+        .gradient-text {
+            background: linear-gradient(to bottom right, #fff 30%, rgba(255,255,255,0.4) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.hero-desc {
+            font-size: 1.25rem;
+            color: #94a3b8;
+            max-width: 700px;
+            margin: 0 auto 40px;
+            line-height: 1.6;
+        }
+
+        .cta-group {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(99, 102, 241, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .btn-secondary {
+            background: var(--glass-bg);
+            color: white;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        /* Features Section */
+        .section-title {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-title h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            margin-bottom: 100px;
+        }
+
+        .feature-card {
+            padding: 32px;
+            text-align: left;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        .icon-box {
+            width: 48px;
+            height: 48px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            color: var(--accent);
+            font-size: 1.5rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .feature-card p {
+            color: #94a3b8;
+            line-height: 1.5;
+            font-size: 0.95rem;
+        }
+
+        /* Tech Stack Section */
+        .tech-section {
+            padding: 80px 0;
+            text-align: center;
+        }
+
+        .tech-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 40px;
+            opacity: 0.6;
+        }
+
+        .tech-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .tech-item span {
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        /* Architecture */
+        .arch-card {
+            margin: 60px 0;
+            padding: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .formula {
+            font-family: monospace;
+            background: rgba(0,0,0,0.2);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 30px 0;
+            font-size: 1.1rem;
+            color: var(--accent);
+            border: 1px dashed var(--glass-border);
+        }
+
+        /* Footer */
+        footer {
+            padding: 60px 0;
+            border-top: 1px solid var(--glass-border);
+            text-align: center;
+            color: #64748b;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 3rem; }
+            .nav-links { display: none; }
+            .arch-card { padding: 32px; }
+            .cta-group { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <nav>
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div class="logo">InternSieve</div>
+            <div class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#architecture">Architecture</a>
+                <a href="http://localhost:3000" class="btn btn-secondary" style="padding: 8px 20px; font-size: 0.875rem;">Launch Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header>
+            <div class="hero-badge">AI-Powered Screening</div>
+            <h1>
+                <span class="gradient-text">Automate Your<br>Internship Intake</span>
+            </h1>
+            <p class="hero-desc">
+                InternSieve uses a hybrid scoring engine combining deterministic heuristics, GPT-4o-mini reasoning, and RAG contextual analysis to find your top candidates.
+            </p>
+            <div class="cta-group">
+                <a href="http://localhost:3000" class="btn btn-primary">Open Dashboard</a>
+                <a href="#architecture" class="btn btn-secondary">How it Works</a>
+            </div>
+        </header>
+
+        <section id="features" class="section-title" style="padding-top: 100px;">
+            <h2>Powerful Features</h2>
+            <p style="color: #94a3b8;">End-to-end recruitment automation for high-volume internship roles.</p>
+        </section>
+
+        <div class="features-grid">
+            <div class="glass feature-card">
+                <div class="icon-box">🎯</div>
+                <h3>Role Creation</h3>
+                <p>Define roles with granular skill requirements, experience levels, and 5 configurable scoring weights.</p>
+            </div>
+            <div class="glass feature-card">
+                <div class="icon-box">📤</div>
+                <h3>Bulk Intake</h3>
+                <p>Drag-and-drop multi-resume upload (PDF/DOCX) with intelligent AI-assisted parsing.</p>
+            </div>
+            <div class="glass feature-card">
+                <div class="icon-box">🧠</div>
+                <h3>Hybrid Scoring</h3>
+                <p>A sophisticated formula weighing skills, experience, project depth, and GPT-4o-mini reasoning.</p>
+            </div>
+            <div class="glass feature-card">
+                <div class="icon-box">🔍</div>
+                <h3>RAG Pipeline</h3>
+                <p>Embeds resumes into FAISS for retrieval-augmented generation and contextual fit analysis.</p>
+            </div>
+            <div class="glass feature-card">
+                <div class="icon-box">📊</div>
+                <h3>HR Dashboard</h3>
+                <p>Real-time analytics, filterable applicant tables, and detailed score breakdowns.</p>
+            </div>
+            <div class="glass feature-card">
+                <div class="icon-box">✉️</div>
+                <h3>Email Automation</h3>
+                <p>AI-generated personalized acceptance and rejection emails sent via SMTP.</p>
+            </div>
+        </div>
+
+        <section id="architecture" class="glass arch-card">
+            <h2 style="font-size: 2.5rem; margin-bottom: 24px;">The AI Scoring Engine</h2>
+            <p style="color: #94a3b8; max-width: 800px;">Our hybrid engine evaluates applicants across three distinct layers to ensure accuracy, fairness, and depth.</p>
+            <div class="formula">
+                finalScore = (Deterministic × 0.45) + (AI Reasoning × 0.40) + (RAG Context × 0.15)
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px; width: 100%; text-align: left; margin-top: 20px;">
+                <div>
+                    <h4 style="color: var(--accent); margin-bottom: 10px;">45% Deterministic</h4>
+                    <p style="font-size: 0.875rem; color: #94a3b8;">Skill overlap, experience proximity, project technical density, and clarity signals.</p>
+                </div>
+                <div>
+                    <h4 style="color: var(--secondary); margin-bottom: 10px;">40% AI Reasoning</h4>
+                    <p style="font-size: 0.875rem; color: #94a3b8;">Holistic evaluation via GPT-4o-mini against the specific role culture and requirements.</p>
+                </div>
+                <div>
+                    <h4 style="color: var(--primary); margin-bottom: 10px;">15% RAG Context</h4>
+                    <p style="font-size: 0.875rem; color: #94a3b8;">Vector similarity analysis between resume chunks and role descriptions using FAISS.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="tech-section">
+            <h3 style="color: #94a3b8; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 2px;">Built with modern tech</h3>
+            <div class="tech-grid">
+                <div class="tech-item"><span>React 19</span></div>
+                <div class="tech-item"><span>Node.js</span></div>
+                <div class="tech-item"><span>MongoDB</span></div>
+                <div class="tech-item"><span>OpenAI GPT-4o</span></div>
+                <div class="tech-item"><span>LangChain</span></div>
+                <div class="tech-item"><span>FAISS</span></div>
+                <div class="tech-item"><span>TailwindCSS</span></div>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 InternSieve. AI-Powered Internship Evaluation Platform.</p>
+        </div>
+    </footer>
+</body>
+</html>
