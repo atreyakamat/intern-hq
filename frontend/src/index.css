@@ -1,1 +1,33 @@
 @import "tailwindcss";
+
+@theme {
+  --color-primary: #2b4bee;
+  --color-background-light: #f6f6f8;
+  --color-background-dark: #0a0c14;
+  --color-surface-dark: #161926;
+  --color-border-dark: #232636;
+  --font-display: "Inter", sans-serif;
+}
+
+@layer utilities {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #232636;
+    border-radius: 10px;
+  }
+}

@@ -7,7 +7,7 @@
  */
 const { OpenAIEmbeddings } = require('@langchain/openai');
 const { FaissStore } = require('@langchain/community/vectorstores/faiss');
-const { RecursiveCharacterTextSplitter } = require('langchain/text_splitter');
+const { RecursiveCharacterTextSplitter } = require('@langchain/textsplitters');
 const { Document } = require('@langchain/core/documents');
 const path = require('path');
 const fs = require('fs');
