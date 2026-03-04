@@ -14,7 +14,8 @@ async function connectDB() {
     console.log('[InternSieve] Connected to MongoDB');
   } catch (err) {
     console.error('[InternSieve] MongoDB connection error:', err.message);
-    process.exit(1);
+    console.warn('[InternSieve] Running WITHOUT database — install MongoDB or set MONGODB_URI to a live Atlas URI to enable persistence.');
+    // Do NOT exit — allow the server to serve non-DB routes (health, static, etc.)
   }
 
   mongoose.connection.on('error', (err) => {
