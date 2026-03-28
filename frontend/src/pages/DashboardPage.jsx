@@ -20,8 +20,13 @@ import {
   evaluateApplicants, rankApplicants, notifyApplicants,
   updateApplicantStatus,
 } from '../api/api';
+import {
+  buildApplicantQuery,
+  getUnnotifiedApplicantsByStatus,
+  resolveActiveRoleId,
+} from '../utils/dashboard';
 
-export default function DashboardPage() {
+export default function DashboardPage({ view = 'dashboard' }) {
   const navigate = useNavigate();
 
   const [applicants, setApplicants] = useState([]);
@@ -51,13 +56,7 @@ export default function DashboardPage() {
   const fetchApplicants = useCallback(async () => {
     try {
       setLoading(true);
-      const params = {};
-      if (filters.hrStatus && filters.hrStatus !== 'all') params.status = filters.hrStatus;
-      if (filters.minScore) params.minScore = filters.minScore;
-      if (filters.sortBy) params.sort = filters.sortBy;
-      if (filters.roleId) params.roleId = filters.roleId;
-
-      const res = await getApplicants(params);
+      const res = await getApplicants(buildApplicantQuery(filters));
       setApplicants(res.data);
     } catch (err) {
       console.error('Error fetching applicants:', err);
@@ -88,7 +87,7 @@ export default function DashboardPage() {
   useEffect(() => { fetchApplicants(); fetchStats(); }, [fetchApplicants, fetchStats]);
 
   /* ---- Utility ---- */
-  const activeRoleId = filters.roleId || applicants[0]?.role?._id || applicants[0]?.role;
+  const activeRoleId = resolveActiveRoleId(filters, applicants, roles);
 
   const flash = (type, msg) => {
     setActionMsg({ type, msg });
@@ -152,12 +151,12 @@ export default function DashboardPage() {
   };
 
   const handleNotifyAccepted = async () => {
-    const accepted = applicants.filter((a) => a.hrStatus === 'accepted' && !a.emailSent);
+    const accepted = getUnnotifiedApplicantsByStatus(applicants, 'accepted');
     if (!accepted.length) return alert('No un-notified accepted applicants.');
     try {
       setNotifying(true);
       const ids = accepted.map((a) => a._id);
-      const res = await notifyApplicants(ids, 'accept');
+      const res = await notifyApplicants(ids, 'accepted');
       flash('success', res.data.message || `Notified ${ids.length} applicant(s).`);
       fetchApplicants();
     } catch (err) {
@@ -168,12 +167,12 @@ export default function DashboardPage() {
   };
 
   const handleNotifyRejected = async () => {
-    const rejected = applicants.filter((a) => a.hrStatus === 'rejected' && !a.emailSent);
+    const rejected = getUnnotifiedApplicantsByStatus(applicants, 'rejected');
     if (!rejected.length) return alert('No un-notified rejected applicants.');
     try {
       setNotifying(true);
       const ids = rejected.map((a) => a._id);
-      const res = await notifyApplicants(ids, 'reject');
+      const res = await notifyApplicants(ids, 'rejected');
       flash('success', res.data.message || `Notified ${ids.length} applicant(s).`);
       fetchApplicants();
     } catch (err) {
@@ -186,11 +185,16 @@ export default function DashboardPage() {
   /* ---- Render ---- */
   return (
     <div>
-      {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Applicant Dashboard</h1>
-          <p className="text-sm text-slate-500 mt-1">AI-powered candidate evaluation and ranking</p>
+          <h1 className="text-2xl font-bold text-slate-900">
+            {view === 'applicants' ? 'Applicants' : 'Applicant Dashboard'}
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            {view === 'applicants'
+              ? 'Review, filter, compare, and update applicant statuses'
+              : 'AI-powered candidate evaluation and ranking'}
+          </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button

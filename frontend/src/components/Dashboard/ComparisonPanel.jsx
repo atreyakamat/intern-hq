@@ -4,8 +4,9 @@ import { X, Lightbulb, AlertTriangle, TrendingUp, Sparkles } from 'lucide-react'
 export default function ComparisonPanel({ comparison, onClose }) {
   if (!comparison) return null;
 
-  const standouts = comparison.topThreeStandout || [];
-  const weaknesses = comparison.commonWeaknessesLowerRanked || [];
+  const standouts = comparison.topDifferentiators || comparison.topThreeStandout || [];
+  const weaknesses =
+    comparison.commonWeaknesses || comparison.commonWeaknessesLowerRanked || [];
   const trend = comparison.overallTrend || '';
   const actions = comparison.recommendedActions || [];
 

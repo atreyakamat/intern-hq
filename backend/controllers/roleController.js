@@ -40,3 +40,16 @@ exports.updateRole = async (req, res) => {
     res.status(400).json({ message: error.message });
   }
 };
+
+exports.deleteRole = async (req, res) => {
+  try {
+    const role = await roleService.deleteRole(req.params.id);
+    if (!role) return res.status(404).json({ message: 'Role not found' });
+    res.json({
+      message: 'Role archived successfully',
+      role,
+    });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};

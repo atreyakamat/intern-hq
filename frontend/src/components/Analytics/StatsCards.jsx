@@ -20,13 +20,13 @@ export default function StatsCards({ stats }) {
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      {CARDS.map(({ key, label, icon: Icon, color }) => (
+      {CARDS.map(({ key, label, icon, color }) => (
         <div
           key={key}
           className="bg-white rounded-xl border border-slate-200 p-5 flex items-center gap-4 shadow-sm"
         >
           <div className={`rounded-lg p-2.5 ${color}`}>
-            <Icon className="h-5 w-5" />
+            {React.createElement(icon, { className: 'h-5 w-5' })}
           </div>
           <div>
             <p className="text-2xl font-bold text-slate-900">{values[key]}</p>

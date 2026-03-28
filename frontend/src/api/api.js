@@ -62,17 +62,25 @@ export const rankApplicants = (roleId) =>
 
 /** POST /api/notify — { applicantIds, action: 'accept'|'reject' } */
 export const notifyApplicants = (applicantIds, action) =>
-  client.post('/api/notify', { applicantIds, action });
+  client.post('/api/notify', {
+    applicantIds,
+    action:
+      action === 'accept'
+        ? 'accepted'
+        : action === 'reject'
+          ? 'rejected'
+          : action,
+  });
 
 /* ---------- Extended ---------- */
 
-/** PATCH /api/applicants/:id/status — { status, sendEmail? } */
-export const updateApplicantStatus = (id, status, sendEmail = false) =>
-  client.patch(`/api/applicants/${id}/status`, { status, sendEmail });
+/** PATCH /api/applicants/:id/status — { status, sendNotification? } */
+export const updateApplicantStatus = (id, status, sendNotification = false) =>
+  client.patch(`/api/applicants/${id}/status`, { status, sendNotification });
 
-/** POST /api/applicants/bulk-action — { applicantIds, action, sendEmail? } */
-export const bulkAction = (applicantIds, action, sendEmail = false) =>
-  client.post('/api/applicants/bulk-action', { applicantIds, action, sendEmail });
+/** POST /api/applicants/bulk-action — { applicantIds, action, sendNotification? } */
+export const bulkAction = (applicantIds, action, sendNotification = false) =>
+  client.post('/api/applicants/bulk-action', { applicantIds, action, sendNotification });
 
 /** GET /api/applicants/compare/:roleId?topN= */
 export const compareApplicants = (roleId, topN = 5) =>

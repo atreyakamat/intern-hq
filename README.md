@@ -1,219 +1,86 @@
 # InternSieve
 
-**AI-Powered Internship Evaluation Platform**
+InternSieve is an internship applicant screening platform with:
 
-InternSieve automates the screening and ranking of internship applicants using a hybrid scoring engine that combines deterministic heuristics, GPT-4o-mini reasoning, and RAG-based contextual analysis. HR teams get a single dashboard to upload resumes, compare top candidates, and send personalised acceptance / rejection emails — all powered by AI.
+- A React frontend for role setup, resume upload, applicant review, comparison, ranking, and notifications
+- An Express + MongoDB backend with applicant and role APIs
+- A hybrid scoring pipeline that combines deterministic scoring with optional AI and RAG layers
+- Graceful fallbacks when OpenAI or SMTP credentials are not configured
 
----
+## What Is Implemented
 
-## Architecture
+- Role management with weighted scoring configuration
+- PDF resume upload and applicant creation
+- Applicant listing, filtering, comparison, and detail views
+- Evaluation, ranking, status updates, and email notification endpoints
+- Middleware for logging, 404 handling, validation, and JSON error responses
+- Backend unit/API tests
+- Production frontend build support and backend static serving in production
 
-```
-backend/
-├── ai/                  # AI layer (LangChain, OpenAI, FAISS)
-│   ├── candidateEvaluator.js – Resume extraction, AI evaluation, email gen
-│   ├── comparisonEngine.js   – Comparative analysis of top applicants
-│   ├── embedding.js          – Vector embedding & FAISS store
-│   ├── ragPipeline.js        – Retrieval-Augmented Generation evaluation
-│   ├── scoringEngine.js      – Hybrid scoring (deterministic + AI + RAG)
-│   └── summaryGenerator.js   – Re-exports from evaluator & comparison
-├── config/
-│   └── db.js                 – MongoDB connection handler
-├── controllers/         # Express request handlers
-├── mailer/              # Nodemailer email service & HTML templates
-│   ├── emailService.js       – Send emails, render templates
-│   └── templates/
-│       ├── accept.html       – Acceptance email template
-│       └── reject.html       – Rejection email template
-├── models/              # Mongoose schemas (Role, Applicant)
-├── routes/              # Express route definitions
-├── services/            # Business logic layer
-├── utils/               # Resume parsing, text cleaning, logging
-│   ├── resumeParser.js
-│   ├── textCleaner.js
-│   └── logger.js
-└── server.js            # Entry point
-
-frontend/
-├── src/
-│   ├── api/
-│   │   └── api.js           – Centralized Axios API client
-│   ├── components/
-│   │   ├── Analytics/       – StatsCards
-│   │   ├── Applicants/      – ApplicantDetail, ScoreBadge
-│   │   ├── Dashboard/       – ApplicantTable, ComparisonPanel
-│   │   ├── Filters/         – FilterBar
-│   │   ├── Layout/          – Navbar, Footer
-│   │   ├── Roles/           – CreateRole, RoleList
-│   │   └── Upload/          – ResumeUpload
-│   ├── pages/
-│   │   ├── DashboardPage.jsx    – Main HR dashboard with workflow actions
-│   │   ├── RoleSetupPage.jsx    – Role listing & creation
-│   │   ├── ApplicantCard.jsx    – Card component for applicant display
-│   │   └── ApplicantModal.jsx   – Modal for applicant detail view
-│   ├── App.jsx
-│   └── config.js
-└── vite.config.js
-```
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Backend | Node.js, Express 5, Mongoose 9, MongoDB |
-| AI / LLM | LangChain JS, OpenAI GPT-4o-mini, text-embedding-3-small |
-| Vector Store | FAISS (faiss-node) — local file-based |
-| Frontend | React 19, Vite 7, TailwindCSS 4, React Router 7 |
-| Email | Nodemailer (SMTP) |
-
----
-
-## Core Features
-
-1. **Role Creation** — Define roles with required/preferred skills, experience level, culture description, and 5 configurable scoring weights.
-2. **Application Intake** — Drag-and-drop multi-resume upload (PDF/DOCX), parsed via `pdf-parse`.
-3. **Resume Parsing** — Extracts text, skills, contact info; AI-assisted structured extraction via `candidateEvaluator.js`.
-4. **RAG Pipeline** — Embeds resumes & role descriptions into FAISS; retrieves relevant chunks at evaluation time.
-5. **Hybrid Scoring** — Three-layer formula: **45% deterministic** (skill match, experience, project depth, communication, bonus signals) + **40% AI reasoning** (GPT-4o-mini evaluation) + **15% RAG contextual fit**.
-6. **Step-by-step Workflow** — Separate API steps: Upload → Evaluate → Rank → Notify.
-7. **Comparative Intelligence** — AI-generated side-by-side analysis of top applicants per role.
-8. **HR Dashboard** — Real-time stats, filterable/sortable applicant table, score breakdown, modal detail view, accept/reject workflow.
-9. **Email Automation** — AI-generated personalised acceptance & rejection emails sent via SMTP with HTML templates.
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- **Node.js** ≥ 18
-- **MongoDB** running locally or a connection URI (e.g. MongoDB Atlas)
-- **OpenAI API key** with access to `gpt-4o-mini` and `text-embedding-3-small`
-
-### 1. Clone
-
-```bash
-git clone https://github.com/atreyakamat/intern-hq.git
-cd intern-hq
-```
-
-### 2. Backend Setup
-
-```bash
-cd backend
-npm install
-cp .env.example .env   # then fill in your real values
-npm run dev             # starts with nodemon on port 5000
-```
-
-### 3. Frontend Setup
-
-```bash
-cd frontend
-npm install
-npm run dev             # Vite dev server on port 3000
-```
-
-Open **http://localhost:3000** in your browser.
-
----
-
-## Environment Variables
-
-Create `backend/.env` from the provided `.env.example`:
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `MONGODB_URI` | MongoDB connection string | `mongodb://127.0.0.1:27017/internsieve` |
-| `OPENAI_API_KEY` | OpenAI API key | — |
-| `EMBEDDING_MODEL` | Embedding model name | `text-embedding-3-small` |
-| `LLM_MODEL` | Chat model name | `gpt-4o-mini` |
-| `SMTP_HOST` | SMTP server hostname | `smtp.gmail.com` |
-| `SMTP_PORT` | SMTP port | `587` |
-| `SMTP_SECURE` | Use TLS | `false` |
-| `SMTP_USER` | SMTP username / email | — |
-| `SMTP_PASS` | SMTP password / app password | — |
-| `PORT` | Backend server port | `5000` |
-| `CORS_ORIGIN` | Allowed frontend origin | `http://localhost:3000` |
-| `LOG_LEVEL` | Logging level (`debug`, `info`, `warn`, `error`) | `debug` |
-
----
-
-## API Endpoints
-
-### Roles
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/role` | Create a new role (spec endpoint) |
-| `GET` | `/api/roles` | List all roles |
-| `GET` | `/api/roles/:id` | Get role by ID |
-| `POST` | `/api/roles` | Create a new role (alternative) |
-| `PUT` | `/api/roles/:id` | Update a role |
-
-### Applicants (Workflow Pipeline)
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/apply` | Submit application — upload resumes (multipart, max 20 files) |
-| `GET` | `/api/applicants` | List applicants (query: roleId, status, minScore, sort) |
-| `GET` | `/api/applicants/:id` | Get applicant detail |
-| `POST` | `/api/evaluate` | Trigger AI evaluation (body: roleId, applicantIds?) |
-| `POST` | `/api/rank` | Rank applicants (body: roleId) |
-| `POST` | `/api/notify` | Send accept/reject emails (body: applicantIds, action) |
-| `PATCH` | `/api/applicants/:id/status` | Quick status update |
-| `POST` | `/api/applicants/bulk-action` | Bulk status update |
-| `GET` | `/api/applicants/compare/:roleId` | AI comparative analysis of top applicants |
-| `GET` | `/api/applicants/analytics` | Dashboard analytics (query: roleId) |
-
-### Health
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/health` | Server health check |
-
----
-
-## Scoring Formula
-
-```
-finalScore = (deterministicScore × 0.45) + (aiScore × 0.40) + (ragScore × 0.15)
-```
-
-**Deterministic sub-scores** (weights configurable per role, defaults: 0.4/0.25/0.2/0.1/0.05):
-- **Skill Match** — overlap ratio of required (70%) + preferred (30%) skills
-- **Experience Score** — proximity to target experience level
-- **Project Depth** — count, description length, technical keyword density
-- **Communication** — resume length, sentence structure, quality indicators
-- **Bonus Signals** — GitHub, LinkedIn, portfolio, education keywords
-
-**AI Score** — GPT-4o-mini evaluates the applicant holistically against the role description.
-
-**RAG Score** — Contextual fit derived from vector similarity between embedded resume chunks and role description.
-
----
-
-## Project Scripts
+## Quick Start
 
 ### Backend
 
-| Command | Description |
-|---------|-------------|
-| `npm start` | Start server (production) |
-| `npm run dev` | Start with nodemon (development) |
+```bash
+cd backend
+copy .env.example .env
+npm install
+npm test
+npm run dev
+```
 
 ### Frontend
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Vite dev server with HMR |
-| `npm run build` | Production build |
-| `npm run preview` | Preview production build |
+```bash
+cd frontend
+copy .env.example .env
+npm install
+npm run lint
+npm run dev
+```
 
----
+Open `http://localhost:3000`.
 
-## License
+## Verification Commands
 
-MIT
+- Backend tests: `cd backend && npm test`
+- Frontend tests: `cd frontend && npm test`
+- Frontend lint: `cd frontend && npm run lint`
+- Frontend production build: `cd frontend && npm run build`
+
+## Environment
+
+### Backend
+
+See [backend/.env.example](/g:/Projects/intern-hq/backend/.env.example) for the full list.
+
+Important variables:
+
+- `MONGODB_URI`
+- `OPENAI_API_KEY`
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_SECURE`
+- `SMTP_USER`
+- `SMTP_PASS`
+- `PORT`
+- `CORS_ORIGIN`
+- `NODE_ENV`
+
+### Frontend
+
+- `VITE_API_BASE_URL`
+
+If omitted in production, the frontend defaults to same-origin requests.
+
+## Docs
+
+- Deployment: [docs/DEPLOYMENT.md](/g:/Projects/intern-hq/docs/DEPLOYMENT.md)
+- Usage: [docs/USAGE.md](/g:/Projects/intern-hq/docs/USAGE.md)
+- Technical architecture: [docs/ARCHITECTURE.md](/g:/Projects/intern-hq/docs/ARCHITECTURE.md)
+
+## Notes
+
+- Resume ingestion currently supports PDF files.
+- If `OPENAI_API_KEY` is missing, resume extraction, evaluation, and comparison use deterministic fallbacks instead of failing.
+- If SMTP credentials are missing, notification attempts fail safely and return an explanatory error in the API response.

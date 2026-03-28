@@ -18,17 +18,15 @@ const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/candidateController');
 const multer = require('multer');
+const validateObjectId = require('../middleware/validateObjectId');
 
 const upload = multer({
   dest: 'uploads/',
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
   fileFilter: (_req, file, cb) => {
-    const allowed = [
-      'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    ];
+    const allowed = ['application/pdf'];
     if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error('Only PDF and DOCX files are allowed'));
+    else cb(new Error('Only PDF files are currently supported'));
   },
 });
 
@@ -41,9 +39,9 @@ router.post('/notify', ctrl.notify);
 
 // ----- Extended routes -----
 router.get('/applicants/analytics', ctrl.getAnalytics);
-router.get('/applicants/compare/:roleId', ctrl.compare);
+router.get('/applicants/compare/:roleId', validateObjectId('roleId'), ctrl.compare);
 router.post('/applicants/bulk-action', ctrl.bulkAction);
-router.get('/applicants/:id', ctrl.getApplicantById);
-router.patch('/applicants/:id/status', ctrl.updateStatus);
+router.get('/applicants/:id', validateObjectId('id'), ctrl.getApplicantById);
+router.patch('/applicants/:id/status', validateObjectId('id'), ctrl.updateStatus);
 
 module.exports = router;

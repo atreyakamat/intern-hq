@@ -9,7 +9,7 @@ const LoginPage = () => {
   const handleLogin = (e) => {
     e.preventDefault();
     // Simulate login
-    navigate('/overview');
+    navigate('/dashboard');
   };
 
   return (

@@ -7,6 +7,7 @@
  * -------------------------------------------------
  */
 const applicantService = require('../services/applicantService');
+const { normalizeWorkflowAction } = require('../utils/actionNormalizer');
 
 /* ---- POST /apply — Submit application (upload resumes) ---- */
 exports.apply = async (req, res) => {
@@ -59,7 +60,7 @@ exports.getApplicants = async (req, res) => {
       hrStatus: req.query.hrStatus || req.query.status,
       minScore: req.query.minScore,
       skills: req.query.skills ? req.query.skills.split(',') : [],
-      sortBy: req.query.sortBy,
+      sortBy: req.query.sortBy || req.query.sort,
     };
     const applicants = await applicantService.listApplicants(filters);
     res.json(applicants);
@@ -130,13 +131,14 @@ exports.rank = async (req, res) => {
 /* ---- POST /notify — Send accept/reject emails ---- */
 exports.notify = async (req, res) => {
   try {
-    const { applicantIds, action } = req.body;
+    const { applicantIds } = req.body;
+    const action = normalizeWorkflowAction(req.body.action);
 
     if (!applicantIds || applicantIds.length === 0) {
       return res.status(400).json({ message: 'applicantIds array is required' });
     }
     if (!['accepted', 'rejected'].includes(action)) {
-      return res.status(400).json({ message: 'action must be "accepted" or "rejected"' });
+      return res.status(400).json({ message: 'action must be accept/accepted or reject/rejected' });
     }
 
     const results = await applicantService.notifyApplicants(applicantIds, action);
@@ -152,7 +154,13 @@ exports.notify = async (req, res) => {
 /* ---- PATCH /applicants/:id/status — Update status (quick action) ---- */
 exports.updateStatus = async (req, res) => {
   try {
-    const { status, sendNotification } = req.body;
+    const status = normalizeWorkflowAction(req.body.status);
+    const sendNotification = req.body.sendNotification ?? req.body.sendEmail;
+
+    if (!status) {
+      return res.status(400).json({ message: 'A valid status is required' });
+    }
+
     const applicant = await applicantService.updateStatus(
       req.params.id,
       status,
@@ -167,7 +175,14 @@ exports.updateStatus = async (req, res) => {
 /* ---- POST /bulk-action — Bulk status/email ---- */
 exports.bulkAction = async (req, res) => {
   try {
-    const { action, applicantIds, sendNotification } = req.body;
+    const { applicantIds } = req.body;
+    const action = normalizeWorkflowAction(req.body.action);
+    const sendNotification = req.body.sendNotification ?? req.body.sendEmail;
+
+    if (!action) {
+      return res.status(400).json({ message: 'A valid action is required' });
+    }
+
     const results = await applicantService.bulkUpdateStatus(
       applicantIds,
       action,

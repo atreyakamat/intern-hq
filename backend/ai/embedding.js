@@ -21,6 +21,10 @@ let vectorStore = null;
  * Initialise the OpenAI embeddings model (lazy singleton).
  */
 function getEmbeddings() {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY is required for embedding generation');
+  }
+
   if (!embeddings) {
     embeddings = new OpenAIEmbeddings({
       openAIApiKey: process.env.OPENAI_API_KEY,
@@ -112,15 +116,16 @@ async function embedRole(roleId, roleText) {
  */
 async function similaritySearch(query, k = 5, filter = {}) {
   const store = await getVectorStore();
-  const results = await store.similaritySearch(query, k);
+  const searchLimit = Object.keys(filter).length > 0 ? Math.max(k * 5, 25) : k;
+  const results = await store.similaritySearch(query, searchLimit);
 
   // FAISS does not support metadata filtering natively in langchain,
   // so we filter in-memory after retrieval.
   if (Object.keys(filter).length === 0) return results;
 
-  return results.filter((doc) =>
-    Object.entries(filter).every(([key, val]) => doc.metadata[key] === val)
-  );
+  return results
+    .filter((doc) => Object.entries(filter).every(([key, val]) => doc.metadata[key] === val))
+    .slice(0, k);
 }
 
 module.exports = {

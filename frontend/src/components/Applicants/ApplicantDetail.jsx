@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getApplicantById, updateApplicantStatus } from '../../api/api';
 import ScoreBadge from './ScoreBadge';
@@ -21,7 +21,7 @@ export default function ApplicantDetail() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
-  const fetch = async () => {
+  const fetchApplicant = useCallback(async () => {
     try {
       setLoading(true);
       const res = await getApplicantById(id);
@@ -31,15 +31,17 @@ export default function ApplicantDetail() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
-  useEffect(() => { fetch(); }, [id]);
+  useEffect(() => {
+    fetchApplicant();
+  }, [fetchApplicant]);
 
   const handleStatus = async (status) => {
     try {
       setActionLoading(true);
       await updateApplicantStatus(id, status, true);
-      await fetch();
+      await fetchApplicant();
     } catch (err) {
       console.error('Status update error:', err);
     } finally {
@@ -59,7 +61,7 @@ export default function ApplicantDetail() {
     return (
       <div className="text-center py-20 text-slate-400">
         Applicant not found.
-        <button onClick={() => navigate('/')} className="ml-2 text-indigo-600 underline">Go back</button>
+        <button onClick={() => navigate('/dashboard')} className="ml-2 text-indigo-600 underline">Go back</button>
       </div>
     );
   }

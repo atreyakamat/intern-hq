@@ -49,7 +49,10 @@ async function processResume(filePath, roleId, formData = {}) {
   // 4. Merge: form data › AI extraction › defaults
   const applicantData = {
     name: formData.name || extracted.name || 'Unknown',
-    email: formData.email || extracted.email || `applicant_${Date.now()}@placeholder.com`,
+    email:
+      formData.email ||
+      extracted.email ||
+      `applicant_${Date.now()}_${Math.random().toString(16).slice(2, 8)}@placeholder.com`,
     phone: formData.phone || extracted.phone || '',
     resumeText,
     resumeFileName: formData.resumeFileName || '',
@@ -180,6 +183,10 @@ async function compareTopApplicants(roleId, topN = 10) {
  * Send accept/reject notifications to specified applicants.
  */
 async function notifyApplicants(applicantIds, action) {
+  if (!Array.isArray(applicantIds) || applicantIds.length === 0) {
+    throw new Error('applicantIds array is required');
+  }
+
   const results = [];
 
   for (const id of applicantIds) {
@@ -255,8 +262,8 @@ async function updateStatus(applicantId, newStatus, sendNotification = true) {
   applicant.hrStatus = newStatus;
 
   if (sendNotification && (newStatus === 'accepted' || newStatus === 'rejected')) {
-    const results = await notifyApplicants([applicantId], newStatus);
-    return applicant;
+    await notifyApplicants([applicantId], newStatus);
+    return Applicant.findById(applicantId).populate('role');
   }
 
   await applicant.save();
@@ -267,6 +274,10 @@ async function updateStatus(applicantId, newStatus, sendNotification = true) {
  * Bulk status update.
  */
 async function bulkUpdateStatus(applicantIds, newStatus, sendNotification = false) {
+  if (!Array.isArray(applicantIds) || applicantIds.length === 0) {
+    throw new Error('applicantIds array is required');
+  }
+
   if (sendNotification && (newStatus === 'accepted' || newStatus === 'rejected')) {
     // Update status and send emails in one go
     for (const id of applicantIds) {
@@ -305,6 +316,7 @@ async function listApplicants(filters = {}) {
   let sort = { finalScore: -1 };
   if (filters.sortBy === 'date') sort = { createdAt: -1 };
   if (filters.sortBy === 'name') sort = { name: 1 };
+  if (filters.sortBy === 'score') sort = { finalScore: -1 };
 
   return Applicant.find(query).populate('role', 'title').sort(sort);
 }

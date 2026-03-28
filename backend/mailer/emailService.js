@@ -15,6 +15,10 @@ let transporter = null;
  * Lazy-create the SMTP transporter.
  */
 function getTransporter() {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    throw new Error('SMTP_USER and SMTP_PASS must be configured to send emails');
+  }
+
   if (transporter) return transporter;
 
   transporter = nodemailer.createTransport({
@@ -70,7 +74,16 @@ function renderTemplate(templateName, data) {
  * @returns {{ success: boolean, messageId?: string, error?: string }}
  */
 async function sendEmail(to, subject, textBody, htmlBody) {
-  const mail = getTransporter();
+  let mail;
+
+  try {
+    mail = getTransporter();
+  } catch (err) {
+    logger.warn('Mailer', 'Email skipped because SMTP is not configured', {
+      error: err.message,
+    });
+    return { success: false, error: err.message };
+  }
 
   const mailOptions = {
     from: `"InternSieve" <${process.env.SMTP_USER}>`,
