@@ -10,7 +10,25 @@ export function buildApplicantQuery(filters = {}) {
 }
 
 export function resolveActiveRoleId(filters = {}, applicants = [], roles = []) {
-  return filters.roleId || applicants[0]?.role?._id || applicants[0]?.role || roles[0]?._id || '';
+  if (filters.roleId) return filters.roleId;
+
+  const applicantRoleIds = [
+    ...new Set(
+      applicants
+        .map((applicant) => applicant?.role?._id || applicant?.role || '')
+        .filter(Boolean)
+    ),
+  ];
+
+  if (applicantRoleIds.length === 1) {
+    return applicantRoleIds[0];
+  }
+
+  if (roles.length === 1) {
+    return roles[0]?._id || '';
+  }
+
+  return '';
 }
 
 export function getUnnotifiedApplicantsByStatus(applicants = [], status) {

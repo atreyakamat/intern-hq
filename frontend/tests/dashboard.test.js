@@ -55,6 +55,17 @@ test('resolveActiveRoleId prefers explicit role filter, then applicants, then ro
   assert.equal(resolveActiveRoleId({}, [], [{ _id: 'fallback-role' }]), 'fallback-role');
 });
 
+test('resolveActiveRoleId requires explicit selection when multiple applicant roles are present', () => {
+  assert.equal(
+    resolveActiveRoleId(
+      {},
+      [{ role: { _id: 'role-a' } }, { role: { _id: 'role-b' } }],
+      [{ _id: 'role-a' }, { _id: 'role-b' }]
+    ),
+    ''
+  );
+});
+
 test('getUnnotifiedApplicantsByStatus returns only pending notifications for a status', () => {
   const applicants = [
     { _id: '1', hrStatus: 'accepted', emailSent: false },

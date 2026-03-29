@@ -18,15 +18,24 @@ const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/candidateController');
 const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 const validateObjectId = require('../middleware/validateObjectId');
 
+const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
+fs.mkdirSync(uploadsDir, { recursive: true });
+
 const upload = multer({
-  dest: 'uploads/',
+  dest: uploadsDir,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
   fileFilter: (_req, file, cb) => {
     const allowed = ['application/pdf'];
     if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error('Only PDF files are currently supported'));
+    else {
+      const error = new Error('Only PDF files are currently supported');
+      error.statusCode = 400;
+      cb(error);
+    }
   },
 });
 

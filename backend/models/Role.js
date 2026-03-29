@@ -50,15 +50,12 @@ const roleSchema = new mongoose.Schema(
   }
 );
 
-roleSchema.pre('save', function (next) {
+roleSchema.pre('validate', function () {
   const w = this.weightConfig;
   const total = w.skills + w.experience + w.projects + w.communication + w.bonus;
   if (Math.abs(total - 1.0) > 0.01) {
-    return next(
-      new Error(`Weight config must sum to 1.0 (current: ${total.toFixed(2)})`)
-    );
+    throw new Error(`Weight config must sum to 1.0 (current: ${total.toFixed(2)})`);
   }
-  next();
 });
 
 module.exports = mongoose.model('Role', roleSchema);

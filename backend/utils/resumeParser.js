@@ -6,7 +6,7 @@
  * -------------------------------------------------
  */
 const fs = require('fs');
-const pdf = require('pdf-parse');
+const { PDFParse } = require('pdf-parse');
 const { cleanText } = require('./textCleaner');
 
 /**
@@ -22,8 +22,15 @@ async function extractTextFromPDF(filePathOrBuffer) {
   } else {
     buffer = fs.readFileSync(filePathOrBuffer);
   }
-  const data = await pdf(buffer);
-  return cleanText(data.text);
+
+  const parser = new PDFParse({ data: buffer });
+
+  try {
+    const data = await parser.getText();
+    return cleanText(data.text);
+  } finally {
+    await parser.destroy();
+  }
 }
 
 /**
