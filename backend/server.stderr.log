@@ -1,0 +1,4 @@
+[2026-03-29T04:53:54.941Z] [WARN] [RoleService] Embedding failed for role Smoke Test Frontend Intern 1774760033 {"error":"OPENAI_API_KEY is required for embedding generation"}
+[ScoringEngine] Embedding failed, continuing: OPENAI_API_KEY is required for embedding generation
+[ScoringEngine] RAG eval failed, continuing: OPENAI_API_KEY is required for embedding generation
+[2026-03-29T04:54:00.148Z] [WARN] [Mailer] Email skipped because SMTP is not configured {"error":"SMTP_USER and SMTP_PASS must be configured to send emails"}

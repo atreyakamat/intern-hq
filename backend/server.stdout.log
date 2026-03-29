@@ -1,0 +1,15 @@
+[dotenv@17.3.1] injecting env (13) from .env -- tip: ⚙️  load multiple .env files with { path: ['.env.local', '.env'] }
+[InternSieve] Server running on port 5000
+[2026-03-29T04:53:22.550Z] [INFO] [HTTP] GET /api/health {"status":200,"durationMs":5}
+[InternSieve] Connected to MongoDB
+[2026-03-29T04:53:54.943Z] [INFO] [HTTP] POST /api/roles {"status":201,"durationMs":1333}
+[2026-03-29T04:53:55.707Z] [INFO] [ApplicantService] Extracted 28 chars from resume
+[2026-03-29T04:53:56.495Z] [INFO] [ApplicantService] Applicant created: Alex Rivera (69c8b06385b7eb37bc451234)
+[2026-03-29T04:53:56.497Z] [INFO] [HTTP] POST /api/apply {"status":201,"durationMs":1492}
+[2026-03-29T04:53:58.055Z] [INFO] [ApplicantService] Evaluated: Alex Rivera → 51
+[2026-03-29T04:53:58.056Z] [INFO] [HTTP] POST /api/evaluate {"status":200,"durationMs":1540}
+[2026-03-29T04:53:59.145Z] [INFO] [HTTP] POST /api/rank {"status":200,"durationMs":1088}
+[2026-03-29T04:54:00.345Z] [INFO] [ApplicantService] accepted email → alex.smoketest.1774760034@example.com {"success":false}
+[2026-03-29T04:54:00.878Z] [INFO] [HTTP] PATCH /api/applicants/69c8b06385b7eb37bc451234/status {"status":200,"durationMs":1732}
+[2026-03-29T04:54:01.247Z] [INFO] [HTTP] GET /api/applicants/69c8b06385b7eb37bc451234 {"status":200,"durationMs":368}
+[2026-03-29T04:54:01.761Z] [INFO] [HTTP] GET /api/applicants/analytics?roleId=69c8b06185b7eb37bc451231 {"status":200,"durationMs":513}
